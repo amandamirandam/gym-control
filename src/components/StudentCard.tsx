@@ -50,9 +50,9 @@ export function StudentCard({
         className={`border-l-4 ${borderColor} hover:shadow-md transition-shadow`}
       >
         <CardContent className="p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-2">
                 <h3 className="font-semibold text-lg truncate font-body">
                   {student.name}
                 </h3>
@@ -73,7 +73,7 @@ export function StudentCard({
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-wrap gap-2">
               {student.status !== "paid" && (
                 <Button
                   size="sm"
