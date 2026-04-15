@@ -74,16 +74,15 @@ export function StudentCard({
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {student.status !== "paid" && (
-                <Button
-                  size="sm"
-                  onClick={() => onPayment(student.id)}
-                  className="gap-1 bg-status-paid hover:bg-status-paid/90 text-primary-foreground"
-                >
-                  <CreditCard className="h-3.5 w-3.5" />
-                  Pagar
-                </Button>
-              )}
+              <Button
+                size="sm"
+                disabled={student.status === "paid"}
+                onClick={() => onPayment(student.id)}
+                className="gap-1 bg-status-paid hover:bg-status-paid/90 text-primary-foreground"
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                Pagar
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
