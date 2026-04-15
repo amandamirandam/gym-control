@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, X } from "lucide-react";
 
 interface StudentFormProps {
-  onSubmit: (student: { name: string; cpf: string; phone: string; startDate: string; dueDay: number }) => void;
+  onSubmit: (student: {
+    name: string;
+    cpf: string;
+    phone: string;
+    startDate: string;
+    dueDay: number;
+  }) => void;
   onCancel: () => void;
 }
 
@@ -21,7 +27,13 @@ export function StudentForm({ onSubmit, onCancel }: StudentFormProps) {
     e.preventDefault();
     if (!name || !cpf || !phone || !startDate) return;
     const dueDay = new Date(startDate + "T12:00:00").getDate();
-    onSubmit({ name, cpf: cpf.replace(/\D/g, ""), phone: phone.replace(/\D/g, ""), startDate, dueDay });
+    onSubmit({
+      name,
+      cpf: cpf.replace(/\D/g, "").slice(0, 11),
+      phone: phone.replace(/\D/g, "").slice(0, 11),
+      startDate,
+      dueDay,
+    });
   };
 
   return (
@@ -36,24 +48,49 @@ export function StudentForm({ onSubmit, onCancel }: StudentFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome completo</Label>
-            <Input id="name" placeholder="João da Silva" value={name} onChange={e => setName(e.target.value)} required />
+            <Input
+              id="name"
+              placeholder="João da Silva"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cpf">CPF</Label>
-              <Input id="cpf" placeholder="000.000.000-00" value={formatCPF(cpf)} onChange={e => setCpf(e.target.value)} required />
+              <Input
+                id="cpf"
+                placeholder="000.000.000-00"
+                value={formatCPF(cpf)}
+                onChange={(e) => setCpf(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">WhatsApp</Label>
-              <Input id="phone" placeholder="(00) 00000-0000" value={formatPhone(phone)} onChange={e => setPhone(e.target.value)} required />
+              <Input
+                id="phone"
+                placeholder="(00) 00000-0000"
+                value={formatPhone(phone)}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="startDate">Data de início</Label>
-            <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
             {startDate && (
               <p className="text-xs text-muted-foreground">
-                Vencimento todo dia {new Date(startDate + "T12:00:00").getDate()} de cada mês
+                Vencimento todo dia{" "}
+                {new Date(startDate + "T12:00:00").getDate()} de cada mês
               </p>
             )}
           </div>
