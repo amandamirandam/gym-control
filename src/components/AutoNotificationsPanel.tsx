@@ -13,14 +13,12 @@ import { formatPhone } from "@/utils/billing";
 
 interface AutoNotificationsPanelProps {
   notifications: PendingNotification[];
-  onSendAll: () => void;
   onSendOne: (studentId: string, type: "reminder" | "due-today") => void;
   onClose: () => void;
 }
 
 export function AutoNotificationsPanel({
   notifications,
-  onSendAll,
   onSendOne,
   onClose,
 }: AutoNotificationsPanelProps) {
@@ -85,16 +83,6 @@ export function AutoNotificationsPanel({
             </div>
           ))}
         </div>
-
-        {/* Botão enviar todas */}
-        <Button className="w-full gap-2" size="lg" onClick={onSendAll}>
-          <Send className="h-4 w-4" />
-          Enviar Todas as Mensagens ({notifications.length})
-        </Button>
-
-        <p className="text-xs text-muted-foreground text-center">
-          💡 As mensagens serão enviadas automaticamente via WhatsApp
-        </p>
       </CardContent>
     </Card>
   );

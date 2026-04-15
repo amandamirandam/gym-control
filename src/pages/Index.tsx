@@ -168,28 +168,6 @@ export default function Index() {
     });
   };
 
-  const sendAllAutoNotifications = () => {
-    let count = 0;
-    pendingNotifications.forEach((notif) => {
-      const phone = notif.student.phone.replace(/\D/g, "");
-      const waUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(notif.message)}`;
-
-      // Open in new tabs (browser may block multiple windows)
-      if (count === 0) {
-        window.open(waUrl, "_blank");
-      }
-
-      count++;
-    });
-
-    toast({
-      title: "Mensagens programadas!",
-      description: `${count} mensagens automáticas foram registradas. Abra o WhatsApp para enviar.`,
-    });
-
-    setShowAutoPanel(false);
-  };
-
   const handleDelete = (studentId: string) => {
     setDeleteStudentId(studentId);
   };
@@ -264,7 +242,6 @@ export default function Index() {
             {showAutoPanel && pendingNotifications.length > 0 && (
               <AutoNotificationsPanel
                 notifications={pendingNotifications}
-                onSendAll={sendAllAutoNotifications}
                 onSendOne={sendAutoNotification}
                 onClose={() => setShowAutoPanel(false)}
               />
