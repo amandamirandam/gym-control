@@ -55,14 +55,38 @@ export function useStudents() {
       try {
         const studentData = toSupabaseStudent(student);
 
+        console.log("📥 Enviando para Supabase:", studentData);
+
+        // Verificar se CPF já existe
+        const { data: existingStudent, error: checkError } = await supabase
+          .from("students")
+          .select("id, cpf")
+          .eq("cpf", student.cpf)
+          .single();
+
+        if (existingStudent) {
+          throw new Error(`CPF ${student.cpf} já cadastrado no sistema`);
+        }
+
+        if (checkError && checkError.code !== "PGRST116") {
+          console.error("Erro ao verificar CPF:", checkError);
+        }
+
         const { data, error } = await supabase
           .from("students")
           .insert([studentData])
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro do Supabase:", error);
+          if (error.code === "23505") {
+            throw new Error(`CPF ${student.cpf} já cadastrado no sistema`);
+          }
+          throw error;
+        }
 
+        console.log("Aluno cadastrado com sucesso:", data);
         const transformedStudent = transformStudent(data);
         setStudents((prev) => [...prev, transformedStudent]);
         return transformedStudent;
@@ -70,7 +94,7 @@ export function useStudents() {
         const message =
           err instanceof Error ? err.message : "Erro ao adicionar aluno";
         setError(message);
-        console.error(message);
+        console.error(message, err);
         throw err;
       }
     },

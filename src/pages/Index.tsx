@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useStudents } from "@/hooks/useStudentsSupabase";
-import { useAutoNotifications } from "@/hooks/useAutoNotifications";
 import { EditStudentDialog } from "@/components/EditStudentDialog";
 import { StudentCard } from "@/components/StudentCard";
 import { StudentForm } from "@/components/StudentForm";
@@ -36,6 +35,7 @@ import {
   formatDateBR,
   getCurrentDueDate,
 } from "@/utils/billing";
+import { sendWhatsAppMessage } from "@/utils/whatsapp";
 import type { StudentStatus } from "@/types/student";
 import { UserPlus, Dumbbell, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -53,8 +53,6 @@ export default function Index() {
     updatePayment,
     getStudentPayments,
   } = useStudents();
-
-  const { pendingNotifications } = useAutoNotifications(students, [], payments);
 
   const [showForm, setShowForm] = useState(false);
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
@@ -125,7 +123,7 @@ export default function Index() {
     setPaymentDialog(null);
   };
 
-  const handleWhatsApp = (studentId: string) => {
+  const handleWhatsApp = async (studentId: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
 
@@ -137,35 +135,25 @@ export default function Index() {
           : "reminder";
     const message = getWhatsAppMessage(student.name, type);
 
-    // Simulate sending — open WhatsApp Web
-    const phone = student.phone.replace(/\D/g, "");
-    const waUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
+    // Enviar mensagem via API do servidor
+    const result = await sendWhatsAppMessage(
+      student.phone,
+      message,
+      student.name,
+    );
 
-    toast({
-      title: "Cobrança enviada!",
-      description: `Mensagem enviada para ${student.name}`,
-    });
-  };
-
-  const sendAutoNotification = (
-    studentId: string,
-    type: "reminder" | "due-today",
-  ) => {
-    const student = students.find((s) => s.id === studentId);
-    if (!student) return;
-
-    const message = getWhatsAppMessage(student.name, type);
-
-    // Open WhatsApp Web
-    const phone = student.phone.replace(/\D/g, "");
-    const waUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
-
-    toast({
-      title: "Mensagem enviada!",
-      description: `Notificação automática enviada para ${student.name}`,
-    });
+    if (result.success) {
+      toast({
+        title: "Mensagem enviada!",
+        description: `Cobrança enviada para ${student.name}`,
+      });
+    } else {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: result.error || "Tente novamente",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDelete = (studentId: string) => {
@@ -228,7 +216,7 @@ export default function Index() {
         {error && (
           <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
             <p className="text-sm text-destructive font-medium">
-              ❌ Erro ao carregar dados
+              Erro ao carregar dados
             </p>
             <p className="text-xs text-destructive/80 mt-1">{error}</p>
           </div>
@@ -238,11 +226,11 @@ export default function Index() {
           <>
             <StatsCards students={students} />
 
-            {/* Auto Notifications Panel */}
-            {showAutoPanel && pendingNotifications.length > 0 && (
+            {/* Alunos Atrasados - Controle de Mensagens */}
+            {showAutoPanel && (
               <AutoNotificationsPanel
-                notifications={pendingNotifications}
-                onSendOne={sendAutoNotification}
+                students={students}
+                onSendMessage={handleWhatsApp}
                 onClose={() => setShowAutoPanel(false)}
               />
             )}
@@ -255,10 +243,29 @@ export default function Index() {
                   exit={{ opacity: 0, height: 0 }}
                 >
                   <StudentForm
-                    onSubmit={(data) => {
-                      addStudent(data);
-                      setShowForm(false);
-                      toast({ title: "Aluno cadastrado!" });
+                    onSubmit={async (data) => {
+                      try {
+                        console.log("Cadastrando aluno:", {
+                          name: data.name,
+                          cpf: data.cpf,
+                          phone: data.phone,
+                          cpfLength: data.cpf.length,
+                          phoneLength: data.phone.length,
+                        });
+                        await addStudent(data);
+                        setShowForm(false);
+                        toast({ title: "Aluno cadastrado!" });
+                      } catch (error) {
+                        console.error("Erro ao cadastrar:", error);
+                        toast({
+                          title: "Erro ao cadastrar aluno",
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : "Tente novamente",
+                          variant: "destructive",
+                        });
+                      }
                     }}
                     onCancel={() => setShowForm(false)}
                   />

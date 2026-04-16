@@ -52,10 +52,17 @@ export function EditStudentDialog({
     e.preventDefault();
     if (!student || !name || !cpf || !phone || !startDate) return;
     const dueDay = new Date(startDate + "T12:00:00").getDate();
+
+    // Remover o 9 duplicado do padrão brasileiro (DDD + 9 + 8 dígitos)
+    let cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
+    if (cleanPhone.length === 11 && cleanPhone[2] === "9") {
+      cleanPhone = cleanPhone.slice(0, 2) + cleanPhone.slice(3);
+    }
+
     onSave(student.id, {
       name,
       cpf: cpf.replace(/\D/g, "").slice(0, 11),
-      phone: phone.replace(/\D/g, "").slice(0, 11),
+      phone: cleanPhone,
       startDate,
       dueDay,
     });
