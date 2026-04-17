@@ -130,22 +130,35 @@ function getNextDueDate(
 
 async function getStudentsNeedingNotification(supabase: any) {
   try {
+    console.log("🔍 ========================================");
+    console.log("🔍 Consultando alunos no banco de dados...");
+
     const { data: students, error: studentsError } = await supabase
       .from("students")
       .select("*");
 
     if (studentsError) throw studentsError;
 
+    console.log(`   📊 Total de alunos cadastrados: ${students?.length || 0}`);
+
+    console.log("💳 Consultando pagamentos...");
     const { data: payments, error: paymentsError } = await supabase
       .from("payments")
       .select("*");
 
     if (paymentsError) throw paymentsError;
 
+    console.log(`   📊 Total de pagamentos: ${payments?.length || 0}`);
+
     const studentsToNotify: any[] = [];
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayStr = format(todayStart, "yyyy-MM");
+
+    console.log(`📅 Data de hoje: ${format(todayStart, "dd/MM/yyyy")}`);
+    console.log(`📅 Mês de referência: ${todayStr}`);
+
+    console.log(`\n🔄 Processando cada aluno...`);
 
     console.log(`\n========================================`);
     console.log(`Data atual: ${format(todayStart, "dd/MM/yyyy")}`);
@@ -232,22 +245,22 @@ async function getStudentsNeedingNotification(supabase: any) {
       }
     }
 
-    console.log(`\n========================================`);
+    console.log(`\n✅ ========================================`);
     if (studentsToNotify.length > 0) {
       console.log(
-        `Encontrados ${studentsToNotify.length} alunos para notificação:`,
+        `✅ ${studentsToNotify.length} alunos precisam de notificação:`,
       );
       studentsToNotify.forEach((s, i) => {
-        console.log(`  ${i + 1}. ${s.name} - ${s.type} - ${s.phone}`);
+        console.log(
+          `   ${i + 1}. ${s.name} - Tipo: ${s.type} - Dias: ${s.daysUntilDue}`,
+        );
       });
     } else {
-      console.log(`Nenhum aluno precisa de notificação hoje`);
-      console.log(`   - Alunos pagos: não recebem mensagem este mês`);
-      console.log(
-        `   - Alunos que já receberam: bloqueados por tipo de mensagem`,
-      );
+      console.log(`✅ Nenhum aluno precisa de notificação no momento`);
+      console.log(`   • Alunos em dia: não recebem mensagem`);
+      console.log(`   • Alunos que já receberam: bloqueados até próximo ciclo`);
     }
-    console.log(`========================================\n`);
+    console.log(`✅ ========================================\n`);
 
     return studentsToNotify;
   } catch (error: any) {
@@ -265,11 +278,6 @@ async function logMessageSent(
   messageId?: string,
 ): Promise<void> {
   try {
-    console.log(`\n📝 Salvando log no banco...`);
-    console.log(`   Student ID: ${studentId}`);
-    console.log(`   Type: ${type}`);
-    console.log(`   Phone: ${phone}`);
-
     const { data, error } = await supabase.from("whatsapp_messages").insert({
       student_id: studentId,
       phone,
@@ -299,14 +307,27 @@ async function sendNotifications(
 ) {
   try {
     const startTime = new Date();
-    console.log("Iniciando envio de notificações...");
+    console.log("📋 ========================================");
+    console.log("📋 Iniciando envio de notificações...");
+    console.log("📋 Horário:", startTime.toISOString());
 
+    console.log("🔍 Buscando alunos que precisam de notificação...");
     const studentsToNotify = await getStudentsNeedingNotification(supabase);
 
+    console.log(`📊 Alunos encontrados: ${studentsToNotify.length}`);
+
     if (studentsToNotify.length === 0) {
-      console.log("Nenhum aluno precisa de notificação hoje");
-      return { success: true, sent: 0, failed: 0 };
+      console.log("✅ Nenhum aluno precisa de notificação hoje");
+      console.log("📋 ========================================\n");
+      return {
+        success: true,
+        sent: 0,
+        failed: 0,
+        date: startTime.toISOString(),
+      };
     }
+
+    console.log("📤 Iniciando envio de mensagens...\n");
 
     let successCount = 0;
     let failureCount = 0;
@@ -315,8 +336,11 @@ async function sendNotifications(
       const student = studentsToNotify[index];
 
       console.log(
-        `(${index + 1}/${studentsToNotify.length}) Enviando para: ${student.name}`,
+        `\n📞 [${index + 1}/${studentsToNotify.length}] Enviando mensagem...`,
       );
+      console.log(`   👤 Nome: ${student.name}`);
+      console.log(`   📱 Phone: ${student.phone.slice(0, 4)}****`);
+      console.log(`   📋 Tipo: ${student.type}`);
 
       const result = await sendWhatsAppMessage(
         student.phone,
@@ -327,10 +351,9 @@ async function sendNotifications(
       );
 
       if (result && result.success) {
-        console.log(`Mensagem enviada com sucesso!`);
+        console.log(`   ✅ Mensagem enviada com sucesso!`);
         successCount++;
 
-        console.log(`Chamando logMessageSent para salvar no banco...`);
         await logMessageSent(
           student.studentId,
           student.phone,
@@ -339,10 +362,9 @@ async function sendNotifications(
           supabase,
           result.data?.messageId,
         );
-        console.log(`Log salvo, continuando...`);
       } else {
         failureCount++;
-        console.error("Erro envio:", result?.error);
+        console.error(`   ❌ Erro ao enviar:`, result?.error);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -351,15 +373,26 @@ async function sendNotifications(
     const endTime = new Date();
     const duration = (endTime.getTime() - startTime.getTime()) / 1000;
 
-    console.log(`\n========================================`);
-    console.log(`Envio concluído em ${duration}s`);
-    console.log(`Sucessos: ${successCount}`);
-    console.log(`Falhas: ${failureCount}`);
-    console.log(`========================================\n`);
+    console.log(`\n📊 ========================================`);
+    console.log(`📊 RESUMO DO ENVIO`);
+    console.log(`📊 ========================================`);
+    console.log(`⏱️  Duração: ${duration}s`);
+    console.log(`✅ Sucessos: ${successCount}`);
+    console.log(`❌ Falhas: ${failureCount}`);
+    console.log(`📊 Total processado: ${studentsToNotify.length}`);
+    console.log(`📊 ========================================\n`);
 
-    return { success: true, sent: successCount, failed: failureCount };
+    return {
+      success: true,
+      sent: successCount,
+      failed: failureCount,
+      total: studentsToNotify.length,
+      duration: `${duration}s`,
+      timestamp: endTime.toISOString(),
+    };
   } catch (error: any) {
-    console.error("Erro ao enviar notificações:", error.message);
+    console.error("❌ Erro ao enviar notificações:", error.message);
+    console.error("❌ Stack:", error.stack);
     throw error;
   }
 }
@@ -370,23 +403,47 @@ async function sendNotifications(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log("Endpoint /api/send-messages chamado");
-    console.log("Método:", req.method);
+    console.log("🚀 ========================================");
+    console.log("🚀 Endpoint /api/send-messages chamado");
+    console.log("🚀 Método:", req.method);
+    console.log("🚀 Query params:", Object.keys(req.query || {}));
 
     // Validar variáveis de ambiente
+    const envVarsStatus = {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      WAPI_INSTANCE_ID: !!process.env.WAPI_INSTANCE_ID,
+      WAPI_TOKEN: !!process.env.WAPI_TOKEN,
+      CRON_SECRET: !!process.env.CRON_SECRET,
+    };
+
+    console.log("🔑 Variáveis de ambiente:", envVarsStatus);
+
     if (
       !process.env.SUPABASE_URL ||
       !process.env.SUPABASE_SERVICE_ROLE_KEY ||
       !process.env.WAPI_INSTANCE_ID ||
       !process.env.WAPI_TOKEN
     ) {
+      const missing = Object.entries(envVarsStatus)
+        .filter(([key, value]) => !value && key !== "CRON_SECRET")
+        .map(([key]) => key);
+
+      console.error("❌ Variáveis faltando:", missing);
+
       return res.status(500).json({
         success: false,
         error: "Configuração do servidor incompleta",
+        missing,
       });
     }
 
+    console.log("✅ Todas as variáveis de ambiente configuradas");
+
+    console.log("✅ Todas as variáveis de ambiente configuradas");
+
     // Criar cliente Supabase dentro da função
+    console.log("🔧 Criando cliente Supabase...");
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -396,18 +453,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = process.env.WAPI_TOKEN;
 
     // Opcional: autenticação básica via query param ou header
-    const authToken = req.headers.authorization || req.query.token;
+    const authToken =
+      req.query.secret || req.headers.authorization || req.query.token;
     const expectedToken = process.env.CRON_SECRET;
 
     if (expectedToken && authToken !== expectedToken) {
+      console.error("❌ Token de autenticação inválido");
       return res.status(401).json({
         success: false,
         error: "Unauthorized",
       });
     }
 
+    if (expectedToken && authToken === expectedToken) {
+      console.log("✅ Autenticação validada com sucesso");
+    }
+
     // Executa a lógica de envio de mensagens
+    console.log("📤 Iniciando processamento de notificações...");
     const result = await sendNotifications(supabase, instanceId, token);
+
+    console.log("✅ Processamento concluído:", result);
+    console.log("🚀 ========================================\n");
 
     return res.status(200).json({
       success: true,
@@ -415,7 +482,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       result,
     });
   } catch (error: any) {
-    console.error("Erro no handler:", error);
+    console.error("❌ ========================================");
+    console.error("❌ Erro no handler:", error.message);
+    console.error("❌ Stack:", error.stack);
+    console.error("❌ ========================================\n");
 
     return res.status(500).json({
       success: false,
