@@ -304,7 +304,6 @@ async function sendNotifications(
 
     if (studentsToNotify.length === 0) {
       console.log("Nenhum aluno precisa de notificação hoje");
-      console.log("========================================\n");
       return {
         success: true,
         sent: 0,
