@@ -68,7 +68,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Debug: verificar variáveis de ambiente
     console.log("=== DEBUG: Variáveis de Ambiente ===");
-    console.log("Todas as env vars disponíveis:", Object.keys(process.env).filter(k => k.includes('WAPI') || k.includes('SUPABASE')));
+    console.log(
+      "Todas as env vars disponíveis:",
+      Object.keys(process.env).filter(
+        (k) => k.includes("WAPI") || k.includes("SUPABASE"),
+      ),
+    );
     console.log(
       "WAPI_INSTANCE_ID:",
       process.env.WAPI_INSTANCE_ID || "UNDEFINED",
@@ -77,10 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "WAPI_TOKEN:",
       process.env.WAPI_TOKEN ? "Configurado ✓" : "UNDEFINED",
     );
-    console.log(
-      "SUPABASE_URL:",
-      process.env.SUPABASE_URL || "UNDEFINED",
-    );
+    console.log("SUPABASE_URL:", process.env.SUPABASE_URL || "UNDEFINED");
     console.log("====================================");
 
     // Validar variáveis de ambiente
