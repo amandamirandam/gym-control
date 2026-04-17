@@ -141,3 +141,46 @@ O sistema roda **diariamente às 09:00** e:
 📅 Próximo mês (maio):
 → Contador reseta
 → Volta a enviar normalmente
+
+---
+
+## 🚀 Deploy na Vercel
+
+Este projeto está configurado para deploy na Vercel com suporte a **Serverless Functions** para envio automático de mensagens.
+
+### Endpoint Serverless
+
+**URL**: `https://seu-projeto.vercel.app/api/send-messages`
+
+Este endpoint executa a mesma lógica de envio automático do backend Node.js, mas como serverless function da Vercel.
+
+### Configuração
+
+1. **Instalar dependências**:
+
+```bash
+npm install
+```
+
+2. **Fazer deploy na Vercel**:
+
+```bash
+npm i -g vercel
+vercel
+```
+
+3. **Configurar variáveis de ambiente** no painel da Vercel:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `WAPI_INSTANCE_ID`
+   - `WAPI_TOKEN`
+   - `CRON_SECRET` (opcional - token de segurança)
+
+4. **Configurar Cron Job Externo**:
+
+Como Vercel Free não executa cron jobs, use um serviço externo:
+
+**Opção 1: cron-job.org**
+
+- URL: `https://seu-projeto.vercel.app/api/send-messages?token=SEU_TOKEN`
+- Schedule: `0 9 * * *` (09:00 diariamente)

@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/send-messages.ts": {
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
+    "WAPI_INSTANCE_ID": "@wapi-instance-id",
+    "WAPI_TOKEN": "@wapi-token",
+    "CRON_SECRET": "@cron-secret"
+  }
+}
