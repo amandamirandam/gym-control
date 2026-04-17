@@ -130,21 +130,40 @@ function getNextDueDate(
 
 async function getStudentsNeedingNotification(supabase: any) {
   try {
+    console.log("🔍 ========================================");
+    console.log("🔍 Consultando alunos no banco de dados...");
+    
     const { data: students, error: studentsError } = await supabase
       .from("students")
       .select("*");
 
-    if (studentsError) throw studentsError;
+    if (studentsError) {
+      console.error("❌ Erro ao buscar alunos:", studentsError);
+      throw studentsError;
+    }
+    
+    console.log(`   ✅ Total de alunos cadastrados: ${students?.length || 0}`);
+
+    console.log("💳 Consultando pagamentos...");
     const { data: payments, error: paymentsError } = await supabase
       .from("payments")
       .select("*");
 
-    if (paymentsError) throw paymentsError;
+    if (paymentsError) {
+      console.error("❌ Erro ao buscar pagamentos:", paymentsError);
+      throw paymentsError;
+    }
+    
+    console.log(`   ✅ Total de pagamentos: ${payments?.length || 0}`);
 
     const studentsToNotify: any[] = [];
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayStr = format(todayStart, "yyyy-MM");
+    
+    console.log(`📅 Data de hoje: ${format(todayStart, "dd/MM/yyyy")}`);
+    console.log(`📅 Mês de referência: ${todayStr}`);
+    console.log(`🔄 Processando ${students?.length || 0} alunos...`);
 
     for (const student of students || []) {
       console.log(`\nVerificando: ${student.name} (dia ${student.due_day})`);
@@ -222,9 +241,12 @@ async function getStudentsNeedingNotification(supabase: any) {
       });
     }
 
+    console.log(`✅ Processamento concluído. Total a notificar: ${studentsToNotify.length}`);
     return studentsToNotify;
   } catch (error: any) {
-    console.error("Erro em getStudentsNeedingNotification:", error.message);
+    console.error("❌ Erro em getStudentsNeedingNotification:", error.message);
+    console.error("❌ Stack:", error.stack);
+    console.error("❌ Detalhes:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
@@ -267,16 +289,18 @@ async function sendNotifications(
 ) {
   try {
     const startTime = new Date();
-    console.log("Iniciando envio de notificações...");
-    console.log("Horário:", startTime.toISOString());
+    console.log("========================================");
+    console.log("📋 Iniciando envio de notificações...");
+    console.log("⏰ Horário:", startTime.toISOString());
 
-    console.log("Buscando alunos que precisam de notificação...");
+    console.log("🔍 Buscando alunos que precisam de notificação...");
     const studentsToNotify = await getStudentsNeedingNotification(supabase);
 
-    console.log(`Alunos encontrados: ${studentsToNotify.length}`);
+    console.log(`📊 Alunos encontrados: ${studentsToNotify.length}`);
 
     if (studentsToNotify.length === 0) {
-      console.log("Nenhum aluno precisa de notificação hoje");
+      console.log("✅ Nenhum aluno precisa de notificação hoje");
+      console.log("========================================\n");
       return {
         success: true,
         sent: 0,
@@ -285,7 +309,7 @@ async function sendNotifications(
       };
     }
 
-    console.log("Iniciando envio de mensagens...\n");
+    console.log("📤 Iniciando envio de mensagens...\n");
 
     let successCount = 0;
     let failureCount = 0;
