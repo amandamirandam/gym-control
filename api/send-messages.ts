@@ -458,7 +458,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const expectedToken = process.env.CRON_SECRET;
 
     if (expectedToken && authToken !== expectedToken) {
-      console.error("❌ Token de autenticação inválido");
+      console.error("❌Token de autenticação inválido");
       return res.status(401).json({
         success: false,
         error: "Unauthorized",
