@@ -245,13 +245,13 @@ async function getStudentsNeedingNotification(supabase: any) {
     }
 
     console.log(
-      `✅ Processamento concluído. Total a notificar: ${studentsToNotify.length}`,
+      `Processamento concluído. Total a notificar: ${studentsToNotify.length}`,
     );
     return studentsToNotify;
   } catch (error: any) {
-    console.error("❌ Erro em getStudentsNeedingNotification:", error.message);
-    console.error("❌ Stack:", error.stack);
-    console.error("❌ Detalhes:", JSON.stringify(error, null, 2));
+    console.error("Erro em getStudentsNeedingNotification:", error.message);
+    console.error("Stack:", error.stack);
+    console.error("Detalhes:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
@@ -279,7 +279,6 @@ async function logMessageSent(
       console.error("   Detalhes:", JSON.stringify(error, null, 2));
     } else {
       console.log("Mensagem registrada no banco com sucesso!");
-      console.log(`   Data inserida:`, data);
     }
   } catch (error: any) {
     console.error("Erro ao salvar log de mensagem:", error.message);
@@ -295,16 +294,16 @@ async function sendNotifications(
   try {
     const startTime = new Date();
     console.log("========================================");
-    console.log("📋 Iniciando envio de notificações...");
-    console.log("⏰ Horário:", startTime.toISOString());
+    console.log("Iniciando envio de notificações...");
+    console.log("Horário:", startTime.toISOString());
 
-    console.log("🔍 Buscando alunos que precisam de notificação...");
+    console.log("Buscando alunos que precisam de notificação...");
     const studentsToNotify = await getStudentsNeedingNotification(supabase);
 
-    console.log(`📊 Alunos encontrados: ${studentsToNotify.length}`);
+    console.log(`Alunos encontrados: ${studentsToNotify.length}`);
 
     if (studentsToNotify.length === 0) {
-      console.log("✅ Nenhum aluno precisa de notificação hoje");
+      console.log("Nenhum aluno precisa de notificação hoje");
       console.log("========================================\n");
       return {
         success: true,
@@ -313,8 +312,6 @@ async function sendNotifications(
         date: startTime.toISOString(),
       };
     }
-
-    console.log("📤 Iniciando envio de mensagens...\n");
 
     let successCount = 0;
     let failureCount = 0;
