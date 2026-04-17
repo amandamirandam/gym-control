@@ -3,19 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
 import { differenceInDays, format } from "date-fns";
 
-// Configuração Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-// Configuração W-API
-const WAPI_CONFIG = {
-  instanceId: process.env.WAPI_INSTANCE_ID!,
-  token: process.env.WAPI_TOKEN!,
-  baseURL: "https://api.w-api.app/v1",
-};
-
 // ==========================================
 // Funções de mensagens (reutilizadas do wapiService.js)
 // ==========================================
@@ -32,12 +19,15 @@ async function sendWhatsAppMessage(
   phone: string,
   message: string,
   studentName: string,
+  instanceId: string,
+  token: string,
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const formattedPhone = formatPhoneForWapi(phone);
 
     // W-API requer instanceId como query param na URL, não no body
-    const url = `${WAPI_CONFIG.baseURL}/message/send-text?instanceId=${WAPI_CONFIG.instanceId}`;
+    const baseURL = "https://api.w-api.app/v1";
+    const url = `${baseURL}/message/send-text?instanceId=${instanceId}`;
 
     const response = await axios.post(
       url,
@@ -48,7 +38,7 @@ async function sendWhatsAppMessage(
       },
       {
         headers: {
-          Authorization: `Bearer ${WAPI_CONFIG.token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       },
@@ -87,6 +77,7 @@ function formatPhoneForWapi(phone: string): string {
 async function hasMessageBeenSentThisMonth(
   studentId: string,
   messageType: string,
+  supabase: any,
 ): Promise<boolean> {
   try {
     const today = new Date();
@@ -137,7 +128,7 @@ function getNextDueDate(
   return new Date(targetYear, targetMonth, validDueDay);
 }
 
-async function getStudentsNeedingNotification() {
+async function getStudentsNeedingNotification(supabase: any) {
   try {
     const { data: students, error: studentsError } = await supabase
       .from("students")
@@ -216,6 +207,7 @@ async function getStudentsNeedingNotification() {
         const alreadySent = await hasMessageBeenSentThisMonth(
           student.id,
           notificationType,
+          supabase,
         );
 
         if (alreadySent) {
@@ -269,6 +261,7 @@ async function logMessageSent(
   phone: string,
   message: string,
   type: string,
+  supabase: any,
   messageId?: string,
 ): Promise<void> {
   try {
@@ -299,12 +292,16 @@ async function logMessageSent(
   }
 }
 
-async function sendNotifications() {
+async function sendNotifications(
+  supabase: any,
+  instanceId: string,
+  token: string,
+) {
   try {
     const startTime = new Date();
     console.log("Iniciando envio de notificações...");
 
-    const studentsToNotify = await getStudentsNeedingNotification();
+    const studentsToNotify = await getStudentsNeedingNotification(supabase);
 
     if (studentsToNotify.length === 0) {
       console.log("Nenhum aluno precisa de notificação hoje");
@@ -325,6 +322,8 @@ async function sendNotifications() {
         student.phone,
         student.message,
         student.name,
+        instanceId,
+        token,
       );
 
       if (result && result.success) {
@@ -337,6 +336,7 @@ async function sendNotifications() {
           student.phone,
           student.message,
           student.type,
+          supabase,
           result.data?.messageId,
         );
         console.log(`Log salvo, continuando...`);
@@ -373,6 +373,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("Endpoint /api/send-messages chamado");
     console.log("Método:", req.method);
 
+    // Validar variáveis de ambiente
+    if (
+      !process.env.SUPABASE_URL ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      !process.env.WAPI_INSTANCE_ID ||
+      !process.env.WAPI_TOKEN
+    ) {
+      return res.status(500).json({
+        success: false,
+        error: "Configuração do servidor incompleta",
+      });
+    }
+
+    // Criar cliente Supabase dentro da função
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
+    const instanceId = process.env.WAPI_INSTANCE_ID;
+    const token = process.env.WAPI_TOKEN;
+
     // Opcional: autenticação básica via query param ou header
     const authToken = req.headers.authorization || req.query.token;
     const expectedToken = process.env.CRON_SECRET;
@@ -385,7 +407,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Executa a lógica de envio de mensagens
-    const result = await sendNotifications();
+    const result = await sendNotifications(supabase, instanceId, token);
 
     return res.status(200).json({
       success: true,

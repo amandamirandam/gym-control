@@ -66,36 +66,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Debug: verificar variáveis de ambiente
-    console.log("=== DEBUG: Variáveis de Ambiente ===");
-    console.log(
-      "Todas as env vars disponíveis:",
-      Object.keys(process.env).filter(
-        (k) => k.includes("WAPI") || k.includes("SUPABASE"),
-      ),
-    );
-    console.log(
-      "WAPI_INSTANCE_ID:",
-      process.env.WAPI_INSTANCE_ID || "UNDEFINED",
-    );
-    console.log(
-      "WAPI_TOKEN:",
-      process.env.WAPI_TOKEN ? "Configurado ✓" : "UNDEFINED",
-    );
-    console.log("SUPABASE_URL:", process.env.SUPABASE_URL || "UNDEFINED");
-    console.log("====================================");
-
     // Validar variáveis de ambiente
     if (!process.env.WAPI_INSTANCE_ID || !process.env.WAPI_TOKEN) {
-      console.error("❌ Variáveis de ambiente não configuradas!");
+      console.error("Variáveis de ambiente não configuradas!");
       return res.status(500).json({
         success: false,
-        error:
-          "Configuração do servidor incompleta. Variáveis de ambiente não encontradas.",
-        details: {
-          WAPI_INSTANCE_ID: process.env.WAPI_INSTANCE_ID ? "OK" : "MISSING",
-          WAPI_TOKEN: process.env.WAPI_TOKEN ? "OK" : "MISSING",
-        },
+        error: "Configuração do servidor incompleta",
       });
     }
 
@@ -110,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     console.log(
-      `📤 Enviando mensagem manual para: ${studentName || "Aluno"} (${phone})`,
+      `Enviando mensagem manual para: ${studentName || "Aluno"} (${phone})`,
     );
 
     // Enviar mensagem
@@ -131,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         timestamp: new Date().toISOString(),
       });
     } else {
-      console.error("❌ Erro ao enviar:", result.error);
+      console.error("Erro ao enviar:", result.error);
       return res.status(500).json({
         success: false,
         error: "Falha ao enviar mensagem",
@@ -140,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
   } catch (error: any) {
-    console.error("❌ Erro no endpoint /api/whatsapp/send:", error.message);
+    console.error("Erro no endpoint /api/whatsapp/send:", error.message);
     return res.status(500).json({
       success: false,
       error: error.message,
