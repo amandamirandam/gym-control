@@ -373,23 +373,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("Endpoint /api/send-messages chamado");
     console.log("Método:", req.method);
 
-    // DEBUG: Verificar variáveis de ambiente
-    console.log("\n=== DEBUG: Variáveis de Ambiente ===");
-    console.log(
-      "WAPI_INSTANCE_ID:",
-      process.env.WAPI_INSTANCE_ID || "NÃO ENCONTRADO",
-    );
-    console.log(
-      "WAPI_TOKEN:",
-      process.env.WAPI_TOKEN ? "Configurado ✓" : "NÃO ENCONTRADO",
-    );
-    console.log(
-      "SUPABASE_URL:",
-      process.env.SUPABASE_URL ? "Configurado ✓" : "NÃO ENCONTRADO",
-    );
-    console.log("CRON_SECRET:", process.env.CRON_SECRET || "NÃO CONFIGURADO");
-    console.log("===================================\n");
-
     // Opcional: autenticação básica via query param ou header
     const authToken = req.headers.authorization || req.query.token;
     const expectedToken = process.env.CRON_SECRET;
