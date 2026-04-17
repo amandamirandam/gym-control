@@ -1,3 +1,6 @@
+// Suprimir warning de url.parse() das bibliotecas
+process.removeAllListeners("warning");
+
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
@@ -132,7 +135,7 @@ async function getStudentsNeedingNotification(supabase: any) {
   try {
     console.log("🔍 ========================================");
     console.log("🔍 Consultando alunos no banco de dados...");
-    
+
     const { data: students, error: studentsError } = await supabase
       .from("students")
       .select("*");
@@ -141,7 +144,7 @@ async function getStudentsNeedingNotification(supabase: any) {
       console.error("❌ Erro ao buscar alunos:", studentsError);
       throw studentsError;
     }
-    
+
     console.log(`   ✅ Total de alunos cadastrados: ${students?.length || 0}`);
 
     console.log("💳 Consultando pagamentos...");
@@ -153,14 +156,14 @@ async function getStudentsNeedingNotification(supabase: any) {
       console.error("❌ Erro ao buscar pagamentos:", paymentsError);
       throw paymentsError;
     }
-    
+
     console.log(`   ✅ Total de pagamentos: ${payments?.length || 0}`);
 
     const studentsToNotify: any[] = [];
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayStr = format(todayStart, "yyyy-MM");
-    
+
     console.log(`📅 Data de hoje: ${format(todayStart, "dd/MM/yyyy")}`);
     console.log(`📅 Mês de referência: ${todayStr}`);
     console.log(`🔄 Processando ${students?.length || 0} alunos...`);
@@ -241,7 +244,9 @@ async function getStudentsNeedingNotification(supabase: any) {
       });
     }
 
-    console.log(`✅ Processamento concluído. Total a notificar: ${studentsToNotify.length}`);
+    console.log(
+      `✅ Processamento concluído. Total a notificar: ${studentsToNotify.length}`,
+    );
     return studentsToNotify;
   } catch (error: any) {
     console.error("❌ Erro em getStudentsNeedingNotification:", error.message);
