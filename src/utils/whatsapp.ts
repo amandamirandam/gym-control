@@ -10,7 +10,9 @@ export async function sendWhatsAppMessage(
   error?: string;
 }> {
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+    // Em produção (Vercel), usa URL relativa
+    // Em dev local, usa backend Node.js em localhost:3001
+    const apiUrl = import.meta.env.VITE_API_URL || "";
 
     const response = await fetch(`${apiUrl}/api/whatsapp/send`, {
       method: "POST",
