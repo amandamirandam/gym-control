@@ -169,8 +169,6 @@ async function getStudentsNeedingNotification(supabase: any) {
     console.log(`🔄 Processando ${students?.length || 0} alunos...`);
 
     for (const student of students || []) {
-      console.log(`\nVerificando: ${student.name} (dia ${student.due_day})`);
-
       const paidThisMonth =
         payments?.some(
           (p: any) =>
@@ -195,10 +193,6 @@ async function getStudentsNeedingNotification(supabase: any) {
         notificationType = "overdue";
         message = getOverdueMessage(student.name, 1);
         console.log(`-> Tipo: ATRASADO (1 dia)`);
-      } else if (daysUntilDue > 0) {
-        console.log(
-          `-> Sem notificação (vence em ${daysUntilDue} dias) - NÃO envia antes do vencimento`,
-        );
       } else {
         const daysOverdue = Math.abs(daysUntilDue);
         console.log(
