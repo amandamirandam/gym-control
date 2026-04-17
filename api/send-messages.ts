@@ -213,7 +213,6 @@ async function getStudentsNeedingNotification(supabase: any) {
       }
     }
 
-    console.log(`\n========================================`);
     if (studentsToNotify.length > 0) {
       console.log(`${studentsToNotify.length} alunos precisam de notificação:`);
       studentsToNotify.forEach((s, i) => {
@@ -222,7 +221,6 @@ async function getStudentsNeedingNotification(supabase: any) {
         );
       });
     }
-    console.log(`========================================\n`);
 
     return studentsToNotify;
   } catch (error: any) {
@@ -269,7 +267,6 @@ async function sendNotifications(
 ) {
   try {
     const startTime = new Date();
-    console.log("========================================");
     console.log("Iniciando envio de notificações...");
     console.log("Horário:", startTime.toISOString());
 
@@ -280,7 +277,6 @@ async function sendNotifications(
 
     if (studentsToNotify.length === 0) {
       console.log("Nenhum aluno precisa de notificação hoje");
-      console.log("========================================\n");
       return {
         success: true,
         sent: 0,
@@ -347,7 +343,6 @@ async function sendNotifications(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log("========================================");
     console.log("Endpoint /api/send-messages chamado");
     console.log("Método:", req.method);
 
@@ -404,19 +399,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("Iniciando processamento de notificações...");
     const result = await sendNotifications(supabase, instanceId, token);
 
-    console.log("Processamento concluído:", result);
-    console.log("========================================\n");
-
     return res.status(200).json({
       success: true,
       message: "Processamento executado com sucesso",
       result,
     });
   } catch (error: any) {
-    console.error("========================================");
     console.error("Erro no handler:", error.message);
     console.error("Stack:", error.stack);
-    console.error("========================================\n");
 
     return res.status(500).json({
       success: false,
