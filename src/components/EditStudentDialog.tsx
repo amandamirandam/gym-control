@@ -25,7 +25,7 @@ interface EditStudentDialogProps {
       startDate: string;
       dueDay: number;
     },
-  ) => void;
+  ) => Promise<void> | void;
 }
 
 export function EditStudentDialog({
@@ -38,6 +38,7 @@ export function EditStudentDialog({
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (student) {
@@ -48,24 +49,33 @@ export function EditStudentDialog({
     }
   }, [student]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
     if (!student || !name || !cpf || !phone || !startDate) return;
-    const dueDay = new Date(startDate + "T12:00:00").getDate();
 
-    // Remover o 9 duplicado do padrão brasileiro (DDD + 9 + 8 dígitos)
-    let cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
-    if (cleanPhone.length === 11 && cleanPhone[2] === "9") {
-      cleanPhone = cleanPhone.slice(0, 2) + cleanPhone.slice(3);
+    setIsSubmitting(true);
+
+    try {
+      const dueDay = new Date(startDate + "T12:00:00").getDate();
+
+      // Remover o 9 duplicado do padrão brasileiro (DDD + 9 + 8 dígitos)
+      let cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
+      if (cleanPhone.length === 11 && cleanPhone[2] === "9") {
+        cleanPhone = cleanPhone.slice(0, 2) + cleanPhone.slice(3);
+      }
+
+      await onSave(student.id, {
+        name,
+        cpf: cpf.replace(/\D/g, "").slice(0, 11),
+        phone: cleanPhone,
+        startDate,
+        dueDay,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onSave(student.id, {
-      name,
-      cpf: cpf.replace(/\D/g, "").slice(0, 11),
-      phone: cleanPhone,
-      startDate,
-      dueDay,
-    });
   };
 
   return (
@@ -83,6 +93,7 @@ export function EditStudentDialog({
               id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -93,6 +104,7 @@ export function EditStudentDialog({
                 id="edit-cpf"
                 value={formatCPF(cpf)}
                 onChange={(e) => setCpf(e.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </div>
@@ -102,6 +114,7 @@ export function EditStudentDialog({
                 id="edit-phone"
                 value={formatPhone(phone)}
                 onChange={(e) => setPhone(e.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </div>
@@ -113,6 +126,7 @@ export function EditStudentDialog({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              disabled={isSubmitting}
               required
             />
             {startDate && (
@@ -123,10 +137,17 @@ export function EditStudentDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Cancelar
             </Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

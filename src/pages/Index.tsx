@@ -399,10 +399,20 @@ export default function Index() {
         }
         open={!!editStudentId}
         onClose={() => setEditStudentId(null)}
-        onSave={(id, data) => {
-          updateStudent(id, data);
-          setEditStudentId(null);
-          toast({ title: "Aluno atualizado!" });
+        onSave={async (id, data) => {
+          try {
+            await updateStudent(id, data);
+            setEditStudentId(null);
+            toast({ title: "Aluno atualizado!" });
+          } catch (error) {
+            console.error("Erro ao atualizar:", error);
+            toast({
+              title: "Erro ao atualizar aluno",
+              description:
+                error instanceof Error ? error.message : "Tente novamente",
+              variant: "destructive",
+            });
+          }
         }}
       />
 

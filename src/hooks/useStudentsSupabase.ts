@@ -93,8 +93,8 @@ export function useStudents() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao adicionar aluno";
-        setError(message);
         console.error(message, err);
+        // NÃO setar error geral aqui - deixar o componente lidar com o erro localmente
         throw err;
       }
     },
@@ -125,8 +125,8 @@ export function useStudents() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao atualizar aluno";
-        setError(message);
-        console.error(message);
+        console.error(message, err);
+        // NÃO setar error geral aqui - deixar o componente lidar com o erro localmente
         throw err;
       }
     },
@@ -156,8 +156,8 @@ export function useStudents() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erro ao remover aluno";
-      setError(message);
-      console.error(message);
+      console.error(message, err);
+      // NÃO setar error geral aqui - deixar o componente lidar com o erro localmente
       throw err;
     }
   }, []);
@@ -186,8 +186,8 @@ export function useStudents() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao adicionar pagamento";
-        setError(message);
-        console.error(message);
+        console.error(message, err);
+        // NÃO setar error geral aqui - deixar o componente lidar com o erro localmente
         throw err;
       }
     },
@@ -212,8 +212,8 @@ export function useStudents() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao atualizar pagamento";
-        setError(message);
-        console.error(message);
+        console.error(message, err);
+        // NÃO setar error geral aqui - deixar o componente lidar com o erro localmente
         throw err;
       }
     },
