@@ -49,14 +49,14 @@ export function StudentForm({ onSubmit, onCancel }: StudentFormProps) {
     try {
       const dueDay = new Date(startDate + "T12:00:00").getDate();
 
-      // Remover o 9 duplicado do padrão brasileiro (DDD + 9 + 8 dígitos)
-      let cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
-      console.log("📞 Phone antes:", phone);
-      console.log("📞 After replace and slice:", cleanPhone);
-      if (cleanPhone.length === 11 && cleanPhone[2] === "9") {
-        cleanPhone = cleanPhone.slice(0, 2) + cleanPhone.slice(3);
-        console.log("📞 After removing duplicate 9:", cleanPhone);
-      }
+      // Limpar formatação do telefone (remover parênteses, espaços, traços)
+      const cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
+      console.log(
+        "📞 Telefone limpo:",
+        cleanPhone,
+        "Tamanho:",
+        cleanPhone.length,
+      );
 
       console.log("Enviando dados:", {
         name,

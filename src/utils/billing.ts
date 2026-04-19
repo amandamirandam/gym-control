@@ -166,8 +166,19 @@ export function formatCPF(cpf: string): string {
 
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "").slice(0, 11);
+
+  // Menos de 2 dígitos: apenas DDD incompleto
   if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+
+  // 3-6 dígitos: DDD + início do número
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+
+  // 7-10 dígitos: telefone fixo (XX) XXXX-XXXX
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  // 11 dígitos: celular (XX) 9XXXX-XXXX
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 

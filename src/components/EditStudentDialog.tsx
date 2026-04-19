@@ -60,11 +60,8 @@ export function EditStudentDialog({
     try {
       const dueDay = new Date(startDate + "T12:00:00").getDate();
 
-      // Remover o 9 duplicado do padrão brasileiro (DDD + 9 + 8 dígitos)
-      let cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
-      if (cleanPhone.length === 11 && cleanPhone[2] === "9") {
-        cleanPhone = cleanPhone.slice(0, 2) + cleanPhone.slice(3);
-      }
+      // Limpar formatação do telefone (remover parênteses, espaços, traços)
+      const cleanPhone = phone.replace(/\D/g, "").slice(0, 11);
 
       await onSave(student.id, {
         name,

@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStudents } from "@/hooks/useStudentsSupabase";
 import { EditStudentDialog } from "@/components/EditStudentDialog";
 import { StudentCard } from "@/components/StudentCard";
 import { StudentForm } from "@/components/StudentForm";
-import { PaymentHistory } from "@/components/PaymentHistory";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { StatsCards } from "@/components/StatsCards";
 import { AutoNotificationsPanel } from "@/components/AutoNotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -37,10 +39,19 @@ import {
 } from "@/utils/billing";
 import { sendWhatsAppMessage } from "@/utils/whatsapp";
 import type { StudentStatus } from "@/types/student";
-import { UserPlus, Dumbbell, Search } from "lucide-react";
+import {
+  UserPlus,
+  Dumbbell,
+  Search,
+  History,
+  CircleAlert,
+  MessageSquare,
+  X,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Index() {
+  const navigate = useNavigate();
   const {
     students,
     payments,
@@ -55,8 +66,8 @@ export default function Index() {
   } = useStudents();
 
   const [showForm, setShowForm] = useState(false);
-  const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
   const [showAutoPanel, setShowAutoPanel] = useState(true);
+  const [showOverdueDialog, setShowOverdueDialog] = useState(false);
   const [filter, setFilter] = useState<StudentStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [paymentDialog, setPaymentDialog] = useState<string | null>(null);
@@ -96,9 +107,48 @@ export default function Index() {
     return list.sort((a, b) => order[a.status] - order[b.status]);
   }, [students, filter, search]);
 
-  const historyStudent = historyStudentId
-    ? students.find((s) => s.id === historyStudentId)
-    : null;
+  // Alunos atrasados para o dialog
+  const overdueStudents = useMemo(() => {
+    return students
+      .filter((s) => s.status === "overdue")
+      .sort((a, b) => {
+        // Calcula dias de atraso para ordenar (mais atrasado primeiro)
+        const aOverdue = a.daysOverdue || 0;
+        const bOverdue = b.daysOverdue || 0;
+        return bOverdue - aOverdue;
+      });
+  }, [students]);
+
+  const handleManualCharge = async (studentId: string) => {
+    const student = students.find((s) => s.id === studentId);
+    if (!student) return;
+
+    try {
+      const message = getWhatsAppMessage(student.name, "overdue");
+
+      const result = await sendWhatsAppMessage(
+        student.phone,
+        message,
+        student.name,
+      );
+
+      if (result.success) {
+        toast({
+          title: "Mensagem enviada!",
+          description: `Cobrança enviada para ${student.name}`,
+        });
+      } else {
+        throw new Error(result.error || "Erro ao enviar mensagem");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handlePayment = (studentId: string) => {
     setPaymentDialog(studentId);
@@ -191,6 +241,29 @@ export default function Index() {
             </div>
           </div>
           <div className="flex gap-2">
+            {overdueStudents.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 relative"
+                onClick={() => setShowOverdueDialog(true)}
+              >
+                <CircleAlert className="h-4 w-4 text-destructive" />
+                <span className="hidden sm:inline">Atrasados</span>
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
+                  {overdueStudents.length}
+                </span>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => navigate("/historico-pagamentos")}
+            >
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Histórico</span>
+            </Button>
             <Button
               size="sm"
               className="gap-1.5"
@@ -273,22 +346,87 @@ export default function Index() {
               )}
             </AnimatePresence>
 
+            {/* Dialog de Alunos Atrasados */}
             <AnimatePresence>
-              {historyStudent && (
+              {showOverdueDialog && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                 >
-                  <PaymentHistory
-                    studentName={historyStudent.name}
-                    payments={getStudentPayments(historyStudent.id)}
-                    onClose={() => setHistoryStudentId(null)}
-                    onEditPayment={(paymentId, newDate) => {
-                      updatePayment(paymentId, newDate);
-                      toast({ title: "Pagamento atualizado!" });
-                    }}
-                  />
+                  <Card className="border-destructive/50 bg-destructive/5">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <CircleAlert className="h-5 w-5 text-destructive" />
+                          <div>
+                            <CardTitle className="text-lg">
+                              Alunos Atrasados - Controle de Mensagens
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {overdueStudents.length}{" "}
+                              {overdueStudents.length === 1
+                                ? "aluno está atrasado"
+                                : "alunos estão atrasados"}{" "}
+                              • Use o botão Cobrar para enviar mensagem manual
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowOverdueDialog(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {overdueStudents.map((student) => (
+                          <div
+                            key={student.id}
+                            className="flex items-center justify-between p-3 bg-card rounded-lg border border-destructive/20"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate">
+                                  {student.name}
+                                </p>
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  {student.daysOverdue}{" "}
+                                  {student.daysOverdue === 1
+                                    ? "dia atrasado"
+                                    : "dias atrasados"}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {student.phone} • Vencimento: dia{" "}
+                                {student.dueDay}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 ml-2 flex-shrink-0 border-destructive/50 hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => handleManualCharge(student.id)}
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Cobrar
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-2 border-t text-xs text-muted-foreground">
+                        <strong>Dica:</strong> O sistema já enviou mensagens
+                        automáticas no dia do vencimento e 1 dia após. Use o
+                        botão "Cobrar" para enviar mensagens manuais adicionais.
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -337,7 +475,9 @@ export default function Index() {
                     key={s.id}
                     student={s}
                     onPayment={handlePayment}
-                    onHistory={setHistoryStudentId}
+                    onHistory={(studentId) =>
+                      navigate(`/historico-pagamentos?studentId=${studentId}`)
+                    }
                     onWhatsApp={handleWhatsApp}
                     onEdit={setEditStudentId}
                     onDelete={handleDelete}

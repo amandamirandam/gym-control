@@ -24,3 +24,4 @@ logs/
 
 # Runtime
 .node_env
+.vercel
