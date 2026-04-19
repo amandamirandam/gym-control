@@ -11,6 +11,50 @@ Sistema de controle de academia - Gerenciamento de alunos, pagamentos e notifica
 - ✅ Filtros por status (pago, vencendo, atrasado)
 - ✅ Dashboard com estatísticas em tempo real
 
+## Gestão de Histórico de Pagamentos
+
+O sistema mantém **apenas 12 meses de histórico** por aluno (rolling 12 months):
+
+### Política de Armazenamento
+
+- ✅ **Máximo**: 12 registros de pagamento por aluno (um por mês)
+- 🔄 **Sobrescrita automática**: Ao pagar um mês, sobrescreve o mesmo mês do ano anterior
+- 📅 **Exemplo prático**:
+  - Janeiro 2026 → armazenado
+  - Janeiro 2027 → **sobrescreve** Janeiro 2026
+  - Fevereiro 2027 → **sobrescreve** Fevereiro 2026
+
+### Como Funciona
+
+```javascript
+// Quando aluno paga mensalidade:
+1. Sistema verifica se já existe pagamento para aquele mês (ex: "janeiro")
+2. Se SIM → UPDATE (sobrescreve registro do ano anterior)
+3. Se NÃO → INSERT (cria novo registro)
+
+// Exemplo Timeline:
+Abr/2026 → Mai/2026 → Jun/2026 → ... → Jan/2027 → Fev/2027
+                                         ↓           ↓
+                                   substitui    substitui
+                                   Jan/2026     Fev/2026
+```
+
+### Benefícios
+
+- ✅ **Performance**: Banco de dados leve (máximo 12 registros/aluno)
+- ✅ **Simplicidade**: Lógica de consulta mais rápida
+- ✅ **Custo**: Reduz armazenamento em Supabase (plano free tem limite)
+- ℹ️ **Histórico útil**: 12 meses são suficientes para análise de inadimplência
+
+### Consulta de Histórico
+
+Na tela **Histórico de Pagamentos**:
+
+- Mostra até 12 meses por aluno
+- Filtros por ano e status
+- Status calculado: "Em dia" ou "Atrasado"
+- Busca por nome/CPF com autocomplete
+
 ## Tech Stack
 
 - **Frontend**: React + TypeScript + Vite

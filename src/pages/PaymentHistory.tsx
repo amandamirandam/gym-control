@@ -99,30 +99,20 @@ export default function PaymentHistory() {
       // Data de vencimento: dia do aluno no mês de referência
       const dueDate = new Date(year, month - 1, selectedStudent.dueDay);
 
-      // Mês atual no formato YYYY-MM
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      // Calcular quantos dias de atraso (apenas para exibição)
+      const diffTime = paymentDate.getTime() - dueDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      let status: PaymentStatus;
-      let diffDays = 0;
-
-      // Se o mês de referência é anterior ao mês atual, sempre marca como "em-dia"
-      // porque o pagamento já foi realizado (está no histórico)
-      if (payment.referenceMonth < currentMonth) {
-        status = "em-dia";
-      } else {
-        // Para o mês atual, calcula se está em dia ou atrasado
-        const diffTime = paymentDate.getTime() - dueDate.getTime();
-        diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        status = diffDays <= 0 ? "em-dia" : "atrasado";
-      }
+      // REGRA: Se o pagamento existe no histórico, significa que FOI PAGO
+      // Portanto, o status SEMPRE é "em-dia", independente da data de pagamento
+      const status: PaymentStatus = "em-dia";
 
       return {
         id: payment.id,
         referenceMonth: payment.referenceMonth,
         paymentDate: payment.paymentDate,
         status,
-        daysLate: diffDays > 0 ? diffDays : 0,
+        daysLate: diffDays > 0 ? diffDays : 0, // Mantém dias de atraso para exibição opcional
       };
     });
   }, [selectedStudentId, selectedStudent, payments]);

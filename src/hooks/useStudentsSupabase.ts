@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { Student, Payment } from "@/types/student";
 import { enrichStudent } from "@/utils/billing";
 import { supabase } from "@/lib/supabase";
@@ -165,23 +165,76 @@ export function useStudents() {
   const addPayment = useCallback(
     async (studentId: string, paymentDate: string, referenceMonth: string) => {
       try {
-        const paymentData = {
-          student_id: studentId,
-          payment_date: paymentDate,
-          reference_month: referenceMonth,
-          created_at: new Date().toISOString(),
-        };
+        // Estratégia: manter apenas 12 meses de histórico (rolling 12 months)
+        // Quando adicionar pagamento para um mês, sobrescrever o mesmo mês do ano anterior
 
-        const { data, error } = await supabase
+        // Extrair o mês da referência (ex: "2027-01" → "-01")
+        const month = referenceMonth.slice(-3); // "-01", "-02", etc.
+
+        // Buscar se já existe um pagamento para este aluno neste mês (qualquer ano)
+        const { data: existingPayments, error: searchError } = await supabase
           .from("payments")
-          .insert([paymentData])
-          .select()
-          .single();
+          .select("*")
+          .eq("student_id", studentId)
+          .like("reference_month", `%${month}`);
 
-        if (error) throw error;
+        if (searchError) throw searchError;
 
-        const transformedPayment = transformPayment(data);
-        setPayments((prev) => [...prev, transformedPayment]);
+        let transformedPayment;
+
+        if (existingPayments && existingPayments.length > 0) {
+          // Existe pagamento para este mês → SOBRESCREVER (UPDATE)
+          const existingPayment = existingPayments[0];
+
+          const { data, error } = await supabase
+            .from("payments")
+            .update({
+              payment_date: paymentDate,
+              reference_month: referenceMonth,
+            })
+            .eq("id", existingPayment.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          transformedPayment = transformPayment(data);
+
+          // Atualizar estado local (substituir o pagamento antigo)
+          setPayments((prev) =>
+            prev.map((p) =>
+              p.id === existingPayment.id ? transformedPayment : p,
+            ),
+          );
+
+          console.log(
+            `Pagamento sobrescrito: ${month} (${existingPayment.reference_month} → ${referenceMonth})`,
+          );
+        } else {
+          // Não existe pagamento para este mês → INSERIR (INSERT)
+          const paymentData = {
+            student_id: studentId,
+            payment_date: paymentDate,
+            reference_month: referenceMonth,
+            created_at: new Date().toISOString(),
+          };
+
+          const { data, error } = await supabase
+            .from("payments")
+            .insert([paymentData])
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          transformedPayment = transformPayment(data);
+
+          // Adicionar ao estado local
+          setPayments((prev) => [...prev, transformedPayment]);
+
+          console.log(`Novo pagamento inserido: ${referenceMonth}`);
+        }
+
         return transformedPayment;
       } catch (err) {
         const message =
@@ -229,7 +282,11 @@ export function useStudents() {
     [payments],
   );
 
-  const enrichedStudents = students.map((s) => enrichStudent(s, payments));
+  // Usar useMemo para garantir re-renderização quando payments ou students mudarem
+  const enrichedStudents = useMemo(
+    () => students.map((s) => enrichStudent(s, payments)),
+    [students, payments],
+  );
 
   return {
     students: enrichedStudents,

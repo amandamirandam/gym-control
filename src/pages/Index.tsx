@@ -155,22 +155,35 @@ export default function Index() {
     setPaymentDate(new Date().toISOString().split("T")[0]);
   };
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (!paymentDialog || !paymentDate) return;
-    addPayment(paymentDialog, paymentDate, getCurrentReferenceMonth());
-    const student = students.find((s) => s.id === paymentDialog);
 
-    // Calcular o próximo vencimento (após pagamento, mostra vencimento do próximo mês)
-    const nextDueDate = getCurrentDueDate(student?.dueDay || 1, true);
-    const nextDueDateFormatted = formatDateBR(
-      nextDueDate.toISOString().split("T")[0],
-    );
+    try {
+      // Aguardar o pagamento ser registrado antes de atualizar a UI
+      await addPayment(paymentDialog, paymentDate, getCurrentReferenceMonth());
 
-    toast({
-      title: "Pagamento registrado!",
-      description: `Próximo vencimento atualizado: ${nextDueDateFormatted}`,
-    });
-    setPaymentDialog(null);
+      const student = students.find((s) => s.id === paymentDialog);
+
+      // Calcular o próximo vencimento (após pagamento, mostra vencimento do próximo mês)
+      const nextDueDate = getCurrentDueDate(student?.dueDay || 1, true);
+      const nextDueDateFormatted = formatDateBR(
+        nextDueDate.toISOString().split("T")[0],
+      );
+
+      toast({
+        title: "Pagamento registrado!",
+        description: `Próximo vencimento atualizado: ${nextDueDateFormatted}`,
+      });
+
+      setPaymentDialog(null);
+    } catch (error) {
+      toast({
+        title: "Erro ao registrar pagamento",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleWhatsApp = async (studentId: string) => {
@@ -210,18 +223,29 @@ export default function Index() {
     setDeleteStudentId(studentId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteStudentId) return;
     const student = students.find((s) => s.id === deleteStudentId);
     const studentName = student?.name || "Aluno";
 
-    removeStudent(deleteStudentId);
-    setDeleteStudentId(null);
-    toast({
-      title: "Aluno excluído com sucesso",
-      description: `${studentName} foi removido do sistema.`,
-      variant: "default",
-    });
+    try {
+      await removeStudent(deleteStudentId);
+
+      toast({
+        title: "Aluno excluído com sucesso",
+        description: `${studentName} foi removido do sistema.`,
+        variant: "default",
+      });
+
+      setDeleteStudentId(null);
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir aluno",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
