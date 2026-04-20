@@ -29,6 +29,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { toast } from "@/hooks/use-toast";
 import {
   getWhatsAppMessage,
@@ -70,6 +79,8 @@ export default function Index() {
   const [showOverdueDialog, setShowOverdueDialog] = useState(false);
   const [filter, setFilter] = useState<StudentStatus | "all">("all");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9; // 9 alunos por página (3x3 grid)
   const [paymentDialog, setPaymentDialog] = useState<string | null>(null);
   const [paymentDate, setPaymentDate] = useState(
     () => new Date().toISOString().split("T")[0],
@@ -106,6 +117,21 @@ export default function Index() {
     };
     return list.sort((a, b) => order[a.status] - order[b.status]);
   }, [students, filter, search]);
+
+  // Resetar para página 1 quando filtros mudarem
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filter, search]);
+
+  // Calcular total de páginas
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  // Alunos da página atual
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredStudents.slice(startIndex, endIndex);
+  }, [filteredStudents, currentPage, itemsPerPage]);
 
   // Alunos atrasados para o dialog
   const overdueStudents = useMemo(() => {
@@ -473,6 +499,28 @@ export default function Index() {
               </div>
             </div>
 
+            {/* Contador de resultados */}
+            {filteredStudents.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Exibindo{" "}
+                <span className="font-semibold text-foreground">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>
+                {" - "}
+                <span className="font-semibold text-foreground">
+                  {Math.min(
+                    currentPage * itemsPerPage,
+                    filteredStudents.length,
+                  )}
+                </span>
+                {" de "}
+                <span className="font-semibold text-foreground">
+                  {filteredStudents.length}
+                </span>
+                {" alunos"}
+              </div>
+            )}
+
             {/* Student List */}
             <div className="space-y-3">
               {filteredStudents.length === 0 ? (
@@ -494,7 +542,7 @@ export default function Index() {
                   )}
                 </div>
               ) : (
-                filteredStudents.map((s) => (
+                paginatedStudents.map((s) => (
                   <StudentCard
                     key={s.id}
                     student={s}
@@ -509,6 +557,78 @@ export default function Index() {
                 ))
               )}
             </div>
+
+            {/* Paginação */}
+            {filteredStudents.length > itemsPerPage && (
+              <div className="flex justify-center mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => {
+                        // Mostrar apenas algumas páginas para não poluir
+                        const showPage =
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1);
+
+                        if (!showPage) {
+                          // Mostrar ellipsis apenas uma vez entre grupos
+                          if (
+                            page === currentPage - 2 ||
+                            page === currentPage + 2
+                          ) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        }
+
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      },
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         )}
       </main>
