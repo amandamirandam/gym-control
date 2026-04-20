@@ -42,9 +42,7 @@ export default function PaymentHistory() {
   const { students, payments, loading } = useStudents();
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>(
-    new Date().getFullYear().toString(),
-  );
+  const [selectedYear, setSelectedYear] = useState<string>(""); // Vazio = todos os anos
   const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>(
     "all",
   );
@@ -79,7 +77,7 @@ export default function PaymentHistory() {
   // Resetar filtros para valores padrão quando trocar de aluno
   useEffect(() => {
     if (selectedStudentId) {
-      setSelectedYear(new Date().getFullYear().toString());
+      setSelectedYear(""); // Mostrar todos os anos por padrão
       setStatusFilter("all");
     }
   }, [selectedStudentId]);
