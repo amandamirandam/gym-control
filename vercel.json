@@ -1,0 +1,8 @@
+{
+  "_comment": "OBSOLETO: Este projeto foi migrado para Render.com. Veja DEPLOY-RENDER.md para instruções de deploy.",
+  "functions": {
+    "api/send-messages.ts": {
+      "maxDuration": 60
+    }
+  }
+}

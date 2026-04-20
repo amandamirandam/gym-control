@@ -25,7 +25,7 @@ services:
       - key: CRON_SECRET
         sync: false
     healthCheckPath: /health
-    
+
   # Frontend Service - React/Vite Static Site
   - type: web
     name: gym-control-frontend

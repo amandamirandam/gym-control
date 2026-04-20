@@ -214,15 +214,17 @@ Este projeto está configurado para deploy no [Render.com](https://render.com) c
 4. **Configurar variáveis de ambiente**:
 
 **Backend (gym-control-server)**:
-  - `WAPI_INSTANCE_ID`
-  - `WAPI_TOKEN`
-  - `SUPABASE_URL`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-  - `CRON_SECRET`
+
+- `WAPI_INSTANCE_ID`
+- `WAPI_TOKEN`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CRON_SECRET`
 
 **Frontend (gym-control-frontend)**:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
 ### URLs dos Serviços
 
@@ -235,6 +237,7 @@ Este projeto está configurado para deploy no [Render.com](https://render.com) c
 Para instruções detalhadas, consulte: **[DEPLOY-RENDER.md](./DEPLOY-RENDER.md)**
 
 Inclui:
+
 - ✅ Passo a passo detalhado
 - ✅ Configuração de variáveis de ambiente
 - ✅ Deploy manual vs automático

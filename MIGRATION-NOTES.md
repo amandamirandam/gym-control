@@ -65,6 +65,7 @@ git push origin main
 No Dashboard do Render, configure:
 
 **Backend**:
+
 - `WAPI_INSTANCE_ID`
 - `WAPI_TOKEN`
 - `SUPABASE_URL`
@@ -72,6 +73,7 @@ No Dashboard do Render, configure:
 - `CRON_SECRET`
 
 **Frontend**:
+
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
@@ -82,14 +84,14 @@ No Dashboard do Render, configure:
 
 ## 🔍 Diferenças Principais
 
-| Aspecto | Vercel | Render |
-|---------|--------|--------|
-| **Frontend** | Static Site | Static Site |
-| **Backend** | Serverless Functions | Web Service (Express) |
-| **Cron Jobs** | Requer serviço externo | Integrado (node-cron) |
-| **Plano Free** | Sim, com limites | Sim, com sleep após 15min inatividade |
-| **Configuração** | vercel.json | render.yaml |
-| **Deploy** | CLI ou Git push | Blueprint ou manual |
+| Aspecto          | Vercel                 | Render                                |
+| ---------------- | ---------------------- | ------------------------------------- |
+| **Frontend**     | Static Site            | Static Site                           |
+| **Backend**      | Serverless Functions   | Web Service (Express)                 |
+| **Cron Jobs**    | Requer serviço externo | Integrado (node-cron)                 |
+| **Plano Free**   | Sim, com limites       | Sim, com sleep após 15min inatividade |
+| **Configuração** | vercel.json            | render.yaml                           |
+| **Deploy**       | CLI ou Git push        | Blueprint ou manual                   |
 
 ## 💡 Vantagens do Render
 
@@ -103,7 +105,6 @@ No Dashboard do Render, configure:
 
 1. **Sleep mode**: Render Free dorme após 15min de inatividade
    - Configure UptimeRobot ou similar para ping a cada 10min
-   
 2. **Cold start**: Primeira requisição após sleep pode demorar ~30s
    - Normal em plano gratuito
 
