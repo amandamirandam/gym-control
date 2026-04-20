@@ -188,43 +188,55 @@ O sistema roda **diariamente às 09:00** e:
 
 ---
 
-## 🚀 Deploy na Vercel
+## 🚀 Deploy no Render
 
-Este projeto está configurado para deploy na Vercel com suporte a **Serverless Functions** para envio automático de mensagens.
+Este projeto está configurado para deploy no [Render.com](https://render.com) com suporte completo a **backend (Express) e frontend (React/Vite)**.
 
-### Endpoint Serverless
+### Arquitetura no Render
 
-**URL**: `https://seu-projeto.vercel.app/api/send-messages`
+- **Backend**: Web Service rodando Express com cron job integrado
+- **Frontend**: Static Site com React/Vite
+- **Cron Job**: Execução automática diária às 09:00 (via node-cron no backend)
 
-Este endpoint executa a mesma lógica de envio automático do backend Node.js, mas como serverless function da Vercel.
+### Deploy Rápido
 
-### Configuração
+1. **Crie uma conta no [Render](https://render.com)**
 
-1. **Instalar dependências**:
+2. **Conecte seu repositório Git**
 
-```bash
-npm install
-```
+3. **Use Blueprint (Recomendado)**:
+   - O projeto inclui `render.yaml` para deploy automático
+   - No Dashboard do Render: **New** → **Blueprint**
+   - Selecione o repositório
+   - Configure as variáveis de ambiente
+   - Clique em **Apply**
 
-2. **Fazer deploy na Vercel**:
+4. **Configurar variáveis de ambiente**:
 
-```bash
-npm i -g vercel
-vercel
-```
+**Backend (gym-control-server)**:
+  - `WAPI_INSTANCE_ID`
+  - `WAPI_TOKEN`
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `CRON_SECRET`
 
-3. **Configurar variáveis de ambiente** no painel da Vercel:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `WAPI_INSTANCE_ID`
-   - `WAPI_TOKEN`
-   - `CRON_SECRET` (opcional - token de segurança)
+**Frontend (gym-control-frontend)**:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
 
-4. **Configurar Cron Job Externo**:
+### URLs dos Serviços
 
-Como Vercel Free não executa cron jobs, use um serviço externo:
+- **Frontend**: `https://gym-control-frontend.onrender.com`
+- **Backend**: `https://gym-control-server.onrender.com`
+- **Health Check**: `https://gym-control-server.onrender.com/health`
 
-**Opção 1: cron-job.org**
+### Documentação Completa
 
-- URL: `https://seu-projeto.vercel.app/api/send-messages?token=SEU_TOKEN`
-- Schedule: `0 9 * * *` (09:00 diariamente)
+Para instruções detalhadas, consulte: **[DEPLOY-RENDER.md](./DEPLOY-RENDER.md)**
+
+Inclui:
+- ✅ Passo a passo detalhado
+- ✅ Configuração de variáveis de ambiente
+- ✅ Deploy manual vs automático
+- ✅ Troubleshooting
+- ✅ Monitoramento e logs
