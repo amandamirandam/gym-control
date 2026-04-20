@@ -7,8 +7,41 @@ import whatsappRoutes from "./routes/whatsapp.js";
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// Configuração CORS - permite requisições do frontend
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (ex: mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      "http://localhost:5173", // Vite dev
+      "http://localhost:4173", // Vite preview
+      "http://localhost:3000", // React dev alternativo
+      "https://gym-control-1.onrender.com", // Frontend produção
+      /\.onrender\.com$/, // Qualquer subdomínio do Render
+    ];
+
+    // Checar se a origin está permitida
+    const isAllowed = allowedOrigins.some((allowedOrigin) => {
+      if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return allowedOrigin === origin;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
