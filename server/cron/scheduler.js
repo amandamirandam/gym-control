@@ -2,12 +2,23 @@ import cron from "node-cron";
 import { sendNotifications } from "../services/notificationService.js";
 
 /**
- * Agenda o envio automático de notificações a cada 5 minutos (para testes)
- * Formato cron: minuto(0-59) hora(0-23) dia(1-31) mês(1-12) dia-semana(0-6)
+ * Agenda o envio automático de notificações
+ * Horário configurável via variáveis de ambiente:
+ * - CRON_SCHEDULE: Expressão cron completa (ex: "0 9 * * *")
+ * - CRON_TIME: Horário simples HH:MM (ex: "09:00")
+ * - Padrão: "0 9 * * *" (09:00 diariamente)
  */
 export function scheduleDailyNotifications() {
-  // Executar a cada 5 minutos (para testes em produção)
-  const cronExpression = "*/5 * * * *";
+  // Ler horário de variáveis de ambiente
+  let cronExpression = process.env.CRON_SCHEDULE || "0 9 * * *";
+  
+  // Se definiu CRON_TIME (formato simples HH:MM), converte para expressão cron
+  if (process.env.CRON_TIME) {
+    const [hour, minute] = process.env.CRON_TIME.split(":");
+    if (hour && minute) {
+      cronExpression = `${minute} ${hour} * * *`;
+    }
+  }
 
   const task = cron.schedule(cronExpression, async () => {
     console.log(
@@ -20,7 +31,7 @@ export function scheduleDailyNotifications() {
     }
   });
 
-  console.log(`Cron job agendado: A cada 5 minutos (${cronExpression})`);
+  console.log(`⏰ Cron job agendado com a expressão: ${cronExpression}`);
   return task;
 }
 
