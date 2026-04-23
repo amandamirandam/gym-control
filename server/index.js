@@ -3,6 +3,8 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import whatsappRoutes from "./routes/whatsapp.js";
+import authRoutes from "./routes/auth.js";
+import usersRoutes from "./routes/users.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +19,7 @@ const corsOptions = {
       "http://localhost:5173", // Vite dev
       "http://localhost:4173", // Vite preview
       "http://localhost:3000", // React dev alternativo
+      "http://localhost:8080", // Dev server alternativo
       "https://gym-control-1.onrender.com", // Frontend produção
       /\.onrender\.com$/, // Qualquer subdomínio do Render
     ];
@@ -45,6 +48,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 
 // Health check
