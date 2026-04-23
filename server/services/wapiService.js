@@ -64,10 +64,7 @@ export async function sendWhatsAppMessage(phone, message, studentName) {
       },
     );
 
-    console.log(
-      `[${new Date().toLocaleString("pt-BR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}] Mensagem enviada com sucesso - Response:`,
-      response.data,
-    );
+    console.log(`Mensagem enviada com sucesso!`);
 
     return {
       success: true,

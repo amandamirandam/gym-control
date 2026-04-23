@@ -21,9 +21,7 @@ async function hasMessageBeenSentThisMonth(studentId, messageType) {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartISO = monthStart.toISOString();
 
-    console.log(
-      `Verificando mensagens para studentId: ${studentId}, type: ${messageType}, desde: ${monthStartISO}`,
-    );
+    console.log(`Verificando mensagens para studentId: ${studentId}`);
 
     const { data, error } = await supabase
       .from("whatsapp_messages")
@@ -38,16 +36,6 @@ async function hasMessageBeenSentThisMonth(studentId, messageType) {
     }
 
     const count = data?.length || 0;
-    console.log(
-      `Encontradas ${count} mensagens do tipo "${messageType}" para este aluno neste mês`,
-    );
-
-    if (count > 0) {
-      console.log(
-        `→ BLOQUEADO: Aluno já recebeu mensagem de "${messageType}" este mês`,
-      );
-    }
-
     return count > 0;
   } catch (error) {
     console.error("Erro ao verificar mensagens:", error.message);
@@ -97,12 +85,6 @@ export async function getStudentsNeedingNotification() {
 
       const dueStart = new Date(nextDueDate.setHours(0, 0, 0, 0));
       const daysUntilDue = differenceInDays(dueStart, todayStart);
-
-      console.log(`\n--- Analisando aluno: ${student.name} ---`);
-      console.log(`Due day: ${student.due_day}`);
-      console.log(`Data de vencimento: ${format(dueStart, "dd/MM/yyyy")}`);
-      console.log(`Dias até vencimento: ${daysUntilDue}`);
-
       let notificationType = null;
       let message = null;
 
