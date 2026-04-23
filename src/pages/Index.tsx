@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useStudents } from "@/hooks/useStudentsSupabase";
 import { EditStudentDialog } from "@/components/EditStudentDialog";
 import { StudentCard } from "@/components/StudentCard";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +47,7 @@ import {
   formatPhone,
   formatDateBR,
   getCurrentDueDate,
+  formatReferenceMonth,
 } from "@/utils/billing";
 import { sendWhatsAppMessage } from "@/utils/whatsapp";
 import type { StudentStatus } from "@/types/student";
@@ -56,11 +59,14 @@ import {
   CircleAlert,
   MessageSquare,
   X,
+  LogOut,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Index() {
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const {
     students,
     payments,
@@ -321,6 +327,30 @@ export default function Index() {
             >
               <UserPlus className="h-4 w-4" />
               <span className="hidden sm:inline">Novo Aluno</span>
+            </Button>
+            {user?.role === "admin" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => navigate("/usuarios")}
+                title="Gerenciar Usuários"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Usuários</span>
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -640,25 +670,49 @@ export default function Index() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl tracking-wider">
-              REGISTRAR PAGAMENTO
+            <DialogTitle className="text-xl tracking-wider flex items-center gap-2">
+              <CircleAlert className="h-5 w-5 text-yellow-600" />
+              CONFIRMAR PAGAMENTO
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              Aluno:{" "}
-              <span className="font-semibold text-foreground">
-                {students.find((s) => s.id === paymentDialog)?.name}
-              </span>
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="payDate">Data do pagamento</Label>
-              <Input
-                id="payDate"
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-              />
+          <div className="space-y-4 py-2">
+            <Alert className="border-yellow-600/50 bg-yellow-50 dark:bg-yellow-950/20">
+              <CircleAlert className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                Confirme os dados antes de registrar o pagamento. Esta ação não
+                poderá ser desfeita facilmente.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Aluno:</span>
+                <span className="font-semibold text-foreground">
+                  {students.find((s) => s.id === paymentDialog)?.name}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  Mês referência:
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatReferenceMonth(getCurrentReferenceMonth())}
+                </span>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t">
+                <Label htmlFor="payDate">Data do pagamento</Label>
+                <Input
+                  id="payDate"
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {formatDateBR(paymentDate)}
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -669,7 +723,7 @@ export default function Index() {
               onClick={confirmPayment}
               className="bg-status-paid hover:bg-status-paid/90 text-primary-foreground"
             >
-              Confirmar
+              ✓ Confirmar Pagamento
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -273,6 +273,27 @@ export function useStudents() {
     [],
   );
 
+  const removePayment = useCallback(async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("payments")
+        .delete()
+        .eq("id", paymentId);
+
+      if (error) throw error;
+
+      // Remove do estado local
+      setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+
+      console.log(`Pagamento removido: ${paymentId}`);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao remover pagamento";
+      console.error(message, err);
+      throw err;
+    }
+  }, []);
+
   const getStudentPayments = useCallback(
     (studentId: string) => {
       return payments
@@ -298,6 +319,7 @@ export function useStudents() {
     removeStudent,
     addPayment,
     updatePayment,
+    removePayment,
     getStudentPayments,
     refreshData: loadAllData,
   };

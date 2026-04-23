@@ -38,7 +38,7 @@ export function StudentCard({
         ? "border-l-status-overdue"
         : student.status === "due-soon"
           ? "border-l-status-due-soon"
-          : "border-l-border";
+          : "border-l-status-pending";
 
   return (
     <motion.div

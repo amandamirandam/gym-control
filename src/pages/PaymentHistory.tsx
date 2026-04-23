@@ -19,10 +19,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Filter, Search, X, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Filter,
+  Search,
+  X,
+  User,
+  Trash2,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { formatReferenceMonth } from "@/utils/billing";
 
 type PaymentStatus = "em-dia" | "atrasado";
 
@@ -39,7 +59,8 @@ const MONTHLY_VALUE = 100; // R$ 100,00
 export default function PaymentHistory() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { students, payments, loading } = useStudents();
+  const { students, payments, loading, removePayment } = useStudents();
+  const { toast } = useToast();
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>(""); // Vazio = todos os anos
@@ -47,6 +68,10 @@ export default function PaymentHistory() {
     "all",
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [deleteDialog, setDeleteDialog] = useState<{
+    paymentId: string;
+    referenceMonth: string;
+  } | null>(null);
 
   // Selecionar aluno automaticamente da URL
   useEffect(() => {
@@ -147,6 +172,36 @@ export default function PaymentHistory() {
     years.add(currentYear);
     return Array.from(years).sort().reverse();
   }, [paymentsWithStatus]);
+
+  // Verificar se é o mês atual (formato YYYY-MM)
+  const isCurrentMonth = (referenceMonth: string): boolean => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return referenceMonth === currentMonth;
+  };
+
+  // Confirmar e deletar pagamento
+  const handleDeletePayment = async () => {
+    if (!deleteDialog) return;
+
+    try {
+      await removePayment(deleteDialog.paymentId);
+
+      toast({
+        title: "Pagamento removido",
+        description: `O pagamento de ${formatReferenceMonth(deleteDialog.referenceMonth)} foi removido com sucesso.`,
+      });
+
+      setDeleteDialog(null);
+    } catch (error) {
+      toast({
+        title: "Erro ao remover pagamento",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -391,6 +446,7 @@ export default function PaymentHistory() {
                           <TableHead>Valor</TableHead>
                           <TableHead>Data Pagamento</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -401,6 +457,10 @@ export default function PaymentHistory() {
                             new Date(parseInt(year), parseInt(month) - 1),
                             "MMMM 'de' yyyy",
                             { locale: ptBR },
+                          );
+
+                          const canDelete = isCurrentMonth(
+                            payment.referenceMonth,
                           );
 
                           return (
@@ -436,6 +496,24 @@ export default function PaymentHistory() {
                                   </Badge>
                                 )}
                               </TableCell>
+                              <TableCell className="text-right">
+                                {canDelete ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      setDeleteDialog({
+                                        paymentId: payment.id,
+                                        referenceMonth: payment.referenceMonth,
+                                      })
+                                    }
+                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    title="Remover pagamento do mês atual"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                ) : null}
+                              </TableCell>
                             </TableRow>
                           );
                         })}
@@ -464,6 +542,44 @@ export default function PaymentHistory() {
           </Card>
         )}
       </div>
+
+      {/* Dialog de confirmação para deletar pagamento */}
+      <AlertDialog
+        open={!!deleteDialog}
+        onOpenChange={() => setDeleteDialog(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-600" />
+              Remover Pagamento
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Tem certeza que deseja remover o pagamento de{" "}
+                <strong>
+                  {deleteDialog?.referenceMonth &&
+                    formatReferenceMonth(deleteDialog.referenceMonth)}
+                </strong>
+                ?
+              </p>
+              <p className="text-amber-600 font-medium">
+                ⚠️ Esta ação não poderá ser desfeita e o status do aluno será
+                atualizado automaticamente.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePayment}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

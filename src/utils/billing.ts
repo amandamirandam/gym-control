@@ -61,7 +61,7 @@ export function getStudentStatus(
   const diff = differenceInDays(dueDate, todayStart);
 
   if (diff < 0) return "overdue";
-  if (diff <= 3) return "due-soon";
+  if (diff === 0) return "due-soon"; // Apenas no dia do vencimento
   return "pending";
 }
 
@@ -185,4 +185,31 @@ export function formatPhone(phone: string): string {
 export function formatDateBR(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
+}
+
+export function formatDateTimeBR(
+  dateStr: string,
+  includeTime: boolean = false,
+): string {
+  try {
+    const date = new Date(dateStr);
+    if (includeTime) {
+      return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    }
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
+  } catch {
+    return dateStr;
+  }
+}
+
+export function formatReferenceMonth(referenceMonth: string): string {
+  try {
+    // referenceMonth vem no formato "YYYY-MM" (ex: "2026-04")
+    const [year, month] = referenceMonth.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    // Retorna no formato "Abril/2026"
+    return format(date, "MMMM/yyyy", { locale: ptBR });
+  } catch {
+    return referenceMonth;
+  }
 }

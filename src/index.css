@@ -39,8 +39,8 @@
     /* Status colors */
     --status-paid: 142 71% 45%;
     --status-paid-bg: 142 71% 95%;
-    --status-pending: 38 92% 50%;
-    --status-pending-bg: 38 92% 95%;
+    --status-pending: 220 80% 45%;
+    --status-pending-bg: 220 80% 96%;
     --status-overdue: 0 72% 51%;
     --status-overdue-bg: 0 72% 95%;
     --status-due-soon: 38 92% 50%;

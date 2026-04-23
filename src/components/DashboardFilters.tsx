@@ -11,6 +11,7 @@ const filters: { key: StudentStatus | "all"; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "overdue", label: "Atrasados" },
   { key: "due-soon", label: "Vencendo" },
+  { key: "pending", label: "Em dia" },
   { key: "paid", label: "Pagos" },
 ];
 
@@ -31,7 +32,7 @@ export function DashboardFilters({
               : f.key === "paid"
                 ? "bg-status-paid"
                 : f.key === "pending"
-                  ? "bg-muted-foreground"
+                  ? "bg-status-pending"
                   : "bg-foreground";
 
         return (
