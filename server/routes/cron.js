@@ -3,25 +3,25 @@ import { sendNotifications } from "../services/notificationService.js";
 
 const router = express.Router();
 
-/**
- * POST /api/cron/send-notifications
- * Endpoint para ser chamado por serviços externos de cron (cron-job.org, GitHub Actions, etc)
- * Protegido por token secreto
- */
-router.post("/send-notifications", async (req, res) => {
+// Handler compartilhado para GET e POST
+const sendNotificationsHandler = async (req, res) => {
   try {
-    // Validar token de segurança
+    // Validar token de segurança (aceita header ou query param)
     const authHeader = req.headers.authorization;
+    const tokenQuery = req.query.token; // Para cron-job.org via GET
     const cronSecret = process.env.CRON_SECRET || "change-me-in-production";
 
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    // Extrair token do header "Bearer TOKEN" ou diretamente da query
+    const providedToken = authHeader?.replace("Bearer ", "") || tokenQuery;
+
+    if (!providedToken || providedToken !== cronSecret) {
       return res.status(401).json({
         success: false,
         message: "Não autorizado - token inválido",
       });
     }
 
-    console.log(`\n ${new Date().toISOString()} - Cron job disparado via HTTP`);
+    console.log(`\n⏰ ${new Date().toISOString()} - Cron job disparado via HTTP (${req.method})`);
 
     // Executar envio de notificações
     await sendNotifications();
@@ -32,14 +32,26 @@ router.post("/send-notifications", async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Erro no cron job via HTTP:", error);
+    console.error("❌ Erro no cron job via HTTP:", error);
     res.status(500).json({
       success: false,
       message: "Erro ao processar notificações",
       error: error.message,
     });
   }
-});
+};
+
+/**
+ * GET/POST /api/cron/send-notifications
+ * Endpoint para ser chamado por serviços externos de cron (cron-job.org, GitHub Actions, etc)
+ * Protegido por token secreto
+ * 
+ * Autenticação via:
+ * - Header: Authorization: Bearer SEU_TOKEN
+ * - Query: ?token=SEU_TOKEN
+ */
+router.get("/send-notifications", sendNotificationsHandler);
+router.post("/send-notifications", sendNotificationsHandler);
 
 /**
  * GET /api/cron/status
