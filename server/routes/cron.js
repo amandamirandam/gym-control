@@ -21,7 +21,9 @@ const sendNotificationsHandler = async (req, res) => {
       });
     }
 
-    console.log(`\n⏰ ${new Date().toISOString()} - Cron job disparado via HTTP (${req.method})`);
+    console.log(
+      `\n⏰ ${new Date().toISOString()} - Cron job disparado via HTTP (${req.method})`,
+    );
 
     // Executar envio de notificações
     await sendNotifications();
@@ -45,7 +47,7 @@ const sendNotificationsHandler = async (req, res) => {
  * GET/POST /api/cron/send-notifications
  * Endpoint para ser chamado por serviços externos de cron (cron-job.org, GitHub Actions, etc)
  * Protegido por token secreto
- * 
+ *
  * Autenticação via:
  * - Header: Authorization: Bearer SEU_TOKEN
  * - Query: ?token=SEU_TOKEN
