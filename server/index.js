@@ -5,6 +5,7 @@ import cors from "cors";
 import whatsappRoutes from "./routes/whatsapp.js";
 import authRoutes from "./routes/auth.js";
 import usersRoutes from "./routes/users.js";
+import cronRoutes from "./routes/cron.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,6 +52,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
+app.use("/api/cron", cronRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
