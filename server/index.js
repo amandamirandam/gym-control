@@ -61,7 +61,6 @@ app.get("/health", (req, res) => {
 
 // Wrapper async para usar await com dynamic imports
 (async () => {
-  const { scheduleDailyNotifications } = await import("./cron/scheduler.js");
   const { sendNotifications } =
     await import("./services/notificationService.js");
 
@@ -76,8 +75,9 @@ app.get("/health", (req, res) => {
     console.log(`Health check: http://localhost:${PORT}/health\n`);
   });
 
-  // Agendar notificações diárias
-  scheduleDailyNotifications();
+  // Cron job desabilitado - usando cron-job.org externo
+  // O servidor responderá ao endpoint /api/cron/send-notifications
+  // quando chamado pelo serviço externo de agendamento
 
   // Opcional: enviar notificações imediatamente ao iniciar (para testes)
   if (process.env.SEND_ON_STARTUP === "true") {
@@ -87,7 +87,9 @@ app.get("/health", (req, res) => {
     });
   }
 
-  console.log("Servidor iniciado e aguardando execução do cron job...\n");
+  console.log(
+    "Servidor iniciado - pronto para receber chamadas do cron externo...\n",
+  );
 })();
 
 // Manter o processo ativo
