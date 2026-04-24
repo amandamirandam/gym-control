@@ -43,37 +43,49 @@ async function hasMessageBeenSentThisMonth(studentId, messageType) {
 
 /**
  * Busca alunos que precisam receber mensagens de cobrança
+ * OTIMIZADO: Busca apenas alunos ativos que NÃO pagaram este mês
  */
 export async function getStudentsNeedingNotification() {
   try {
-    const { data: students, error: studentsError } = await supabase
-      .from("students")
-      .select("*")
-      .eq("active", true); // Apenas alunos ativos
-
-    if (studentsError) throw studentsError;
-
-    const { data: payments, error: paymentsError } = await supabase
-      .from("payments")
-      .select("*");
-
-    if (paymentsError) throw paymentsError;
-
-    const studentsToNotify = [];
-
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayStr = format(todayStart, "yyyy-MM");
 
-    console.log(`Processando ${students.length} alunos (mês: ${todayStr})`);
+    // Buscar apenas pagamentos do mês atual
+    const { data: paymentsThisMonth, error: paymentsError } = await supabase
+      .from("payments")
+      .select("student_id")
+      .eq("reference_month", todayStr);
 
-    for (const student of students) {
-      // Verifica pagamento no mês
-      const paidThisMonth = payments.some(
-        (p) => p.student_id === student.id && p.reference_month === todayStr,
-      );
+    if (paymentsError) throw paymentsError;
 
-      if (paidThisMonth) continue;
+    // IDs dos alunos que JÁ PAGARAM este mês
+    const paidStudentIds = new Set(
+      paymentsThisMonth?.map((p) => p.student_id) || []
+    );
+
+    // Buscar apenas alunos ATIVOS
+    const { data: students, error: studentsError } = await supabase
+      .from("students")
+      .select("*")
+      .eq("active", true);
+
+    if (studentsError) throw studentsError;
+
+    // Filtrar apenas alunos que NÃO pagaram
+    const unpaidStudents = students.filter(
+      (student) => !paidStudentIds.has(student.id)
+    );
+
+    console.log(
+      `Alunos ativos: ${students.length} | Pagos: ${paidStudentIds.size} | Não pagos: ${unpaidStudents.length}`
+    );
+
+    const studentsToNotify = [];
+
+    for (const student of unpaidStudents) {
+      // Como já sabemos que não pagou, paidThisMonth = false
+      const paidThisMonth = false;
 
       const nextDueDate = getNextDueDate(
         student.due_day,
