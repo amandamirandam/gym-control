@@ -81,7 +81,8 @@ app.listen(PORT, () => {
 if (process.env.SEND_ON_STARTUP === "true") {
   (async () => {
     console.log("SEND_ON_STARTUP ativado - enviando notificações...\n");
-    const { sendNotifications } = await import("./services/notificationService.js");
+    const { sendNotifications } =
+      await import("./services/notificationService.js");
     sendNotifications().catch((error) => {
       console.error("Erro ao enviar notificações:", error.message);
     });

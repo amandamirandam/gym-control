@@ -25,7 +25,7 @@ export default function Login() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    
+
     if (loading) {
       // Mostra mensagem de servidor acordando após 3 segundos
       timer = setTimeout(() => {
