@@ -59,43 +59,36 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Gym Control Server is running" });
 });
 
-// Wrapper async para usar await com dynamic imports
-(async () => {
-  const { sendNotifications } =
-    await import("./services/notificationService.js");
+console.log("Iniciando Gym Control Notification Server...\n");
 
-  console.log("Iniciando Gym Control Notification Server...\n");
+// Iniciar servidor Express imediatamente (sem await de imports)
+app.listen(PORT, () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const baseUrl = isProduction
+    ? process.env.RENDER_EXTERNAL_URL || `https://gym-control-2.onrender.com`
+    : `http://localhost:${PORT}`;
 
-  // Iniciar servidor Express
-  app.listen(PORT, () => {
-    const isProduction = process.env.NODE_ENV === "production";
-    const baseUrl = isProduction
-      ? process.env.RENDER_EXTERNAL_URL || `https://gym-control-2.onrender.com`
-      : `http://localhost:${PORT}`;
+  console.log(`✅ Servidor Express rodando na porta ${PORT}`);
+  console.log(`Ambiente: ${isProduction ? "PRODUÇÃO" : "DESENVOLVIMENTO"}`);
+  console.log(`Health check: ${baseUrl}/health`);
+  console.log(`Endpoints disponíveis: ${baseUrl}/api/\n`);
+});
 
-    console.log(`Servidor Express rodando na porta ${PORT}`);
-    console.log(`Ambiente: ${isProduction ? "PRODUÇÃO" : "DESENVOLVIMENTO"}`);
-    console.log(`Endpoint WhatsApp: ${baseUrl}/api/whatsapp/send`);
-    console.log(`Endpoint Cron: ${baseUrl}/api/cron/send-notifications`);
-    console.log(`Health check: ${baseUrl}/health\n`);
-  });
+// Lazy load: carregar serviços apenas quando necessário (não no startup)
+// Isso reduz o cold start em ~5-10 segundos
 
-  // Cron job desabilitado - usando cron-job.org externo
-  // O servidor responderá ao endpoint /api/cron/send-notifications
-  // quando chamado pelo serviço externo de agendamento
-
-  // Opcional: enviar notificações imediatamente ao iniciar (para testes)
-  if (process.env.SEND_ON_STARTUP === "true") {
-    console.log("SEND_ON_STARTUP ativado - enviando notificações agora...\n");
+// Opcional: enviar notificações imediatamente ao iniciar (para testes)
+if (process.env.SEND_ON_STARTUP === "true") {
+  (async () => {
+    console.log("SEND_ON_STARTUP ativado - enviando notificações...\n");
+    const { sendNotifications } = await import("./services/notificationService.js");
     sendNotifications().catch((error) => {
       console.error("Erro ao enviar notificações:", error.message);
     });
-  }
+  })();
+}
 
-  console.log(
-    "Servidor iniciado - pronto para receber chamadas do cron externo...\n",
-  );
-})();
+console.log("Servidor pronto - aguardando requisições...\n");
 
 // Manter o processo ativo
 process.on("SIGINT", () => {
