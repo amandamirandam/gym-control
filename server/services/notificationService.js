@@ -21,8 +21,6 @@ async function hasMessageBeenSentThisMonth(studentId, messageType) {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartISO = monthStart.toISOString();
 
-    console.log(`Verificando mensagens para studentId: ${studentId}`);
-
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .select("id, sent_at, type")
@@ -31,7 +29,7 @@ async function hasMessageBeenSentThisMonth(studentId, messageType) {
       .gte("sent_at", monthStartISO);
 
     if (error) {
-      console.warn("Erro ao verificar mensagens anteriores:", error);
+      console.warn("Erro ao verificar mensagens anteriores:", error.message);
       return false;
     }
 
@@ -67,8 +65,7 @@ export async function getStudentsNeedingNotification() {
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayStr = format(todayStart, "yyyy-MM");
 
-    console.log("Hoje:", todayStart);
-    console.log("Mês atual:", todayStr);
+    console.log(`Processando ${students.length} alunos (mês: ${todayStr})`);
 
     for (const student of students) {
       // Verifica pagamento no mês
@@ -95,22 +92,10 @@ export async function getStudentsNeedingNotification() {
         // Dia do vencimento - PRIMEIRA mensagem
         notificationType = "due-today";
         message = getDueTodayMessage(student.name);
-        console.log(`-> Tipo: VENCENDO HOJE`);
       } else if (daysUntilDue === -1) {
         // 1 dia atrasado - SEGUNDA e ÚLTIMA mensagem
         notificationType = "overdue";
         message = getOverdueMessage(student.name, 1);
-        console.log(`-> Tipo: ATRASADO (1 dia)`);
-      } else if (daysUntilDue > 0) {
-        console.log(
-          `-> Sem notificação (vence em ${daysUntilDue} dias) - NÃO envia antes do vencimento`,
-        );
-      } else {
-        // Mais de 1 dia atrasado - não envia mais
-        const daysOverdue = Math.abs(daysUntilDue);
-        console.log(
-          `-> Sem notificação (atrasado há ${daysOverdue} dias) - Já enviou as 2 mensagens permitidas`,
-        );
       }
 
       if (notificationType) {
@@ -120,44 +105,20 @@ export async function getStudentsNeedingNotification() {
           notificationType,
         );
 
-        if (alreadySent) {
-          console.log(
-            `Pulando ${student.name} - Mensagem de "${notificationType}" já foi enviada este mês`,
-          );
-          continue;
+        if (!alreadySent) {
+          studentsToNotify.push({
+            studentId: student.id,
+            name: student.name,
+            phone: student.phone,
+            type: notificationType,
+            message,
+            daysUntilDue,
+          });
         }
-
-        console.log(
-          `Adicionando ${student.name} para envio de "${notificationType}"`,
-        );
-
-        studentsToNotify.push({
-          studentId: student.id,
-          name: student.name,
-          phone: student.phone,
-          type: notificationType,
-          message,
-          daysUntilDue,
-        });
       }
     }
 
-    console.log(`\n========================================`);
-    if (studentsToNotify.length > 0) {
-      console.log(
-        `Encontrados ${studentsToNotify.length} alunos para notificação:`,
-      );
-      studentsToNotify.forEach((s, i) => {
-        console.log(`  ${i + 1}. ${s.name} - ${s.type} - ${s.phone}`);
-      });
-    } else {
-      console.log(`Nenhum aluno precisa de notificação hoje`);
-      console.log(`   - Alunos pagos: não recebem mensagem este mês`);
-      console.log(
-        `   - Alunos que já receberam: bloqueados por tipo de mensagem`,
-      );
-    }
-    console.log(`========================================\n`);
+    console.log(`${studentsToNotify.length} alunos precisam de notificação`);
 
     return studentsToNotify;
   } catch (error) {
@@ -205,18 +166,17 @@ export async function sendNotifications() {
 
     if (studentsToNotify.length === 0) {
       console.log("Nenhum aluno precisa de notificação hoje");
-      return;
+      return { total: 0, success: 0, failures: 0 };
     }
+
+    console.log(`Enviando para ${studentsToNotify.length} alunos...`);
 
     let successCount = 0;
     let failureCount = 0;
+    const errors = [];
 
     for (let index = 0; index < studentsToNotify.length; index++) {
       const student = studentsToNotify[index];
-
-      console.log(
-        `(${index + 1}/${studentsToNotify.length}) Enviando para: ${student.name}`,
-      );
 
       const result = await sendWhatsAppMessage(
         student.phone,
@@ -236,20 +196,25 @@ export async function sendNotifications() {
         );
       } else {
         failureCount++;
-        console.error("Erro envio:", result?.error);
+        errors.push({ name: student.name, error: result?.error });
       }
 
+      // Delay entre mensagens
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    console.log("Finalizado");
-    console.log(`Sucesso: ${successCount}`);
-    console.log(`Falhas: ${failureCount}`);
+    const duration = ((new Date() - startTime) / 1000).toFixed(1);
+    console.log(`Finalizado em ${duration}s - Sucesso: ${successCount}, Falhas: ${failureCount}`);
+    
+    if (errors.length > 0) {
+      console.log(`Erros: ${errors.map(e => `${e.name}: ${e.error}`).join(', ')}`);
+    }
 
     return {
       total: studentsToNotify.length,
       success: successCount,
       failures: failureCount,
+      duration,
     };
   } catch (error) {
     console.error("Erro ao enviar notificações:", error.message);
@@ -262,10 +227,6 @@ export async function sendNotifications() {
  */
 async function logMessageSent(studentId, phone, message, type, messageSid) {
   try {
-    console.log(
-      `Registrando mensagem para BD - studentId: ${studentId}, type: ${type}, messageId: ${messageSid}`,
-    );
-
     const { data, error } = await supabase
       .from("whatsapp_messages")
       .insert([
@@ -274,18 +235,16 @@ async function logMessageSent(studentId, phone, message, type, messageSid) {
           phone,
           message,
           type,
-          message_sid: messageSid, // Após rodar migration: twilio_sid → message_sid
+          message_sid: messageSid,
           sent_at: new Date().toISOString(),
         },
       ])
       .select();
 
     if (error) {
-      console.error("Erro ao salvar log:", error);
+      console.error("Erro ao salvar log:", error.message);
       throw error;
     }
-
-    console.log("Mensagem registrada no BD com sucesso");
   } catch (error) {
     console.error("Erro ao salvar log:", error.message);
   }

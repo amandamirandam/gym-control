@@ -22,19 +22,20 @@ const sendNotificationsHandler = async (req, res) => {
     }
 
     console.log(
-      `\n⏰ ${new Date().toISOString()} - Cron job disparado via HTTP (${req.method})`,
+      `${new Date().toISOString()} - Cron job disparado via ${req.method}`,
     );
 
     // Executar envio de notificações
-    await sendNotifications();
+    const result = await sendNotifications();
 
     res.json({
       success: true,
       message: "Notificações processadas com sucesso",
       timestamp: new Date().toISOString(),
+      stats: result || { total: 0, success: 0, failures: 0 },
     });
   } catch (error) {
-    console.error("❌ Erro no cron job via HTTP:", error);
+    console.error("Erro no cron job via HTTP:", error);
     res.status(500).json({
       success: false,
       message: "Erro ao processar notificações",

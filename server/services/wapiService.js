@@ -34,18 +34,6 @@ function formatPhoneForWapi(phone) {
 export async function sendWhatsAppMessage(phone, message, studentName) {
   try {
     const formattedPhone = formatPhoneForWapi(phone);
-    const timestamp = new Date().toLocaleString("pt-BR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-    console.log(
-      `[${timestamp}] Iniciando envio para ${studentName} (${formattedPhone})`,
-    );
 
     const url = `${wapiConfig.baseUrl}/message/send-text?instanceId=${wapiConfig.instanceId}`;
 
@@ -64,26 +52,15 @@ export async function sendWhatsAppMessage(phone, message, studentName) {
       },
     );
 
-    console.log(`Mensagem enviada com sucesso!`);
-
     return {
       success: true,
       data: response.data,
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    const errorTimestamp = new Date().toLocaleString("pt-BR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
     console.error(
-      `[${errorTimestamp}] Erro ao enviar mensagem para ${studentName}:`,
-      error.response?.data || error.message,
+      `Erro ao enviar para ${studentName} (${phone}):`,
+      error.response?.data?.message || error.message,
     );
 
     return {
