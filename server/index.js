@@ -68,11 +68,16 @@ app.get("/health", (req, res) => {
 
   // Iniciar servidor Express
   app.listen(PORT, () => {
+    const isProduction = process.env.NODE_ENV === "production";
+    const baseUrl = isProduction
+      ? process.env.RENDER_EXTERNAL_URL || `https://gym-control-2.onrender.com`
+      : `http://localhost:${PORT}`;
+
     console.log(`Servidor Express rodando na porta ${PORT}`);
-    console.log(
-      `Endpoint WhatsApp: http://localhost:${PORT}/api/whatsapp/send`,
-    );
-    console.log(`Health check: http://localhost:${PORT}/health\n`);
+    console.log(`Ambiente: ${isProduction ? "PRODUÇÃO" : "DESENVOLVIMENTO"}`);
+    console.log(`Endpoint WhatsApp: ${baseUrl}/api/whatsapp/send`);
+    console.log(`Endpoint Cron: ${baseUrl}/api/cron/send-notifications`);
+    console.log(`Health check: ${baseUrl}/health\n`);
   });
 
   // Cron job desabilitado - usando cron-job.org externo
