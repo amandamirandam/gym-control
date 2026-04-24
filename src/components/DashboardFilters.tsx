@@ -2,17 +2,18 @@ import type { StudentStatus } from "@/types/student";
 import { Button } from "@/components/ui/button";
 
 interface DashboardFiltersProps {
-  active: StudentStatus | "all";
-  onChange: (filter: StudentStatus | "all") => void;
-  counts: Record<StudentStatus | "all", number>;
+  active: StudentStatus | "all" | "inactive";
+  onChange: (filter: StudentStatus | "all" | "inactive") => void;
+  counts: Record<StudentStatus | "all" | "inactive", number>;
 }
 
-const filters: { key: StudentStatus | "all"; label: string }[] = [
+const filters: { key: StudentStatus | "all" | "inactive"; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "overdue", label: "Atrasados" },
   { key: "due-soon", label: "Vencendo" },
   { key: "pending", label: "Em dia" },
   { key: "paid", label: "Pagos" },
+  { key: "inactive", label: "Inativos" },
 ];
 
 export function DashboardFilters({
@@ -33,7 +34,9 @@ export function DashboardFilters({
                 ? "bg-status-paid"
                 : f.key === "pending"
                   ? "bg-status-pending"
-                  : "bg-foreground";
+                  : f.key === "inactive"
+                    ? "bg-muted-foreground"
+                    : "bg-foreground";
 
         return (
           <Button
@@ -43,7 +46,10 @@ export function DashboardFilters({
             onClick={() => onChange(f.key)}
             className="gap-1.5"
           >
-            {f.key !== "all" && (
+            {f.key !== "all" && f.key !== "inactive" && (
+              <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+            )}
+            {f.key === "inactive" && (
               <span className={`h-2 w-2 rounded-full ${dotColor}`} />
             )}
             {f.label}

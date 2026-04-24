@@ -25,6 +25,9 @@ export function useAutoNotifications(
     const pending: PendingNotification[] = [];
 
     for (const student of students) {
+      // Pular alunos inativos
+      if (!student.active) continue;
+
       // Pular se já pagou
       if (student.status === "paid") continue;
 

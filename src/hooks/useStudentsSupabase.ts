@@ -8,6 +8,7 @@ import {
   toSupabaseStudent,
   toSupabasePayment,
 } from "@/lib/transformers";
+import { sendWhatsAppMessage } from "@/utils/whatsapp";
 
 export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -104,6 +105,11 @@ export function useStudents() {
   const updateStudent = useCallback(
     async (id: string, data: Partial<Omit<Student, "id" | "createdAt">>) => {
       try {
+        // Buscar estado anterior do aluno
+        const previousStudent = students.find((s) => s.id === id);
+        const wasActive = previousStudent?.active ?? true;
+        const willBeActive = data.active ?? wasActive;
+
         // Transformar camelCase para snake_case
         const updateData: Record<string, any> = {};
         if (data.name) updateData.name = data.name;
@@ -111,6 +117,7 @@ export function useStudents() {
         if (data.phone) updateData.phone = data.phone;
         if (data.startDate) updateData.start_date = data.startDate;
         if (data.dueDay) updateData.due_day = data.dueDay;
+        if (data.active !== undefined) updateData.active = data.active;
 
         const { error } = await supabase
           .from("students")
@@ -118,6 +125,28 @@ export function useStudents() {
           .eq("id", id);
 
         if (error) throw error;
+
+        // Se aluno foi INATIVADO, excluir TODOS os pagamentos
+        if (wasActive && !willBeActive) {
+          console.log(
+            `🗑️ Aluno inativado - excluindo todos os pagamentos de ${id}`,
+          );
+
+          const { error: paymentsError } = await supabase
+            .from("payments")
+            .delete()
+            .eq("student_id", id);
+
+          if (paymentsError) {
+            console.error("Erro ao excluir pagamentos:", paymentsError);
+            throw paymentsError;
+          }
+
+          // Atualizar estado local - remover pagamentos
+          setPayments((prev) => prev.filter((p) => p.studentId !== id));
+
+          console.log(`✅ Pagamentos excluídos com sucesso`);
+        }
 
         setStudents((prev) =>
           prev.map((s) => (s.id === id ? { ...s, ...data } : s)),
@@ -130,7 +159,7 @@ export function useStudents() {
         throw err;
       }
     },
-    [],
+    [students],
   );
 
   const removeStudent = useCallback(async (id: string) => {
@@ -235,6 +264,52 @@ export function useStudents() {
           console.log(`Novo pagamento inserido: ${referenceMonth}`);
         }
 
+        // 🆕 ENVIAR MENSAGEM DE CONFIRMAÇÃO DE PAGAMENTO
+        try {
+          // Buscar dados do aluno
+          const student = students.find((s) => s.id === studentId);
+
+          if (student && student.phone) {
+            // Formatar data de pagamento (ex: "23/04/2026")
+            const [year, month, day] = paymentDate.split("-");
+            const formattedDate = `${day}/${month}/${year}`;
+
+            // Formatar mês de referência (ex: "Abril/2026")
+            const [refYear, refMonth] = referenceMonth.split("-");
+            const monthNames = [
+              "Janeiro",
+              "Fevereiro",
+              "Março",
+              "Abril",
+              "Maio",
+              "Junho",
+              "Julho",
+              "Agosto",
+              "Setembro",
+              "Outubro",
+              "Novembro",
+              "Dezembro",
+            ];
+            const formattedMonth = `${monthNames[parseInt(refMonth) - 1]}/${refYear}`;
+
+            const message = `✅ *Pagamento Confirmado!*\n\nOlá, ${student.name}!\n\nSeu pagamento da mensalidade de *${formattedMonth}* foi confirmado com sucesso!\n\n📅 Data do pagamento: ${formattedDate}\n\nObrigado por manter sua mensalidade em dia! 💪`;
+
+            // Enviar mensagem (não bloqueia se falhar)
+            sendWhatsAppMessage(student.phone, message, student.name).catch(
+              (err) => {
+                console.error("Erro ao enviar mensagem de confirmação:", err);
+              },
+            );
+
+            console.log(
+              `📲 Mensagem de confirmação enviada para ${student.name}`,
+            );
+          }
+        } catch (err) {
+          // Não propagar erro de mensagem - pagamento já foi registrado
+          console.error("Erro ao enviar mensagem de confirmação:", err);
+        }
+
         return transformedPayment;
       } catch (err) {
         const message =
@@ -244,7 +319,7 @@ export function useStudents() {
         throw err;
       }
     },
-    [],
+    [students],
   );
 
   const updatePayment = useCallback(

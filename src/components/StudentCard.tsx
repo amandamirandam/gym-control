@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { StudentWithStatus } from "@/types/student";
 import { formatCPF, formatPhone, formatDateBR } from "@/utils/billing";
 import {
@@ -31,8 +32,9 @@ export function StudentCard({
   onEdit,
   onDelete,
 }: StudentCardProps) {
-  const borderColor =
-    student.status === "paid"
+  const borderColor = !student.active
+    ? "border-l-muted-foreground"
+    : student.status === "paid"
       ? "border-l-status-paid"
       : student.status === "overdue"
         ? "border-l-status-overdue"
@@ -56,10 +58,21 @@ export function StudentCard({
                 <h3 className="font-semibold text-lg truncate font-body">
                   {student.name}
                 </h3>
-                <StatusBadge
-                  status={student.status}
-                  daysOverdue={student.daysOverdue}
-                />
+                <div className="flex items-center gap-2">
+                  {!student.active ? (
+                    <Badge
+                      variant="secondary"
+                      className="bg-muted text-muted-foreground"
+                    >
+                      INATIVO
+                    </Badge>
+                  ) : (
+                    <StatusBadge
+                      status={student.status}
+                      daysOverdue={student.daysOverdue}
+                    />
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
@@ -76,7 +89,7 @@ export function StudentCard({
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                disabled={student.status === "paid"}
+                disabled={!student.active || student.status === "paid"}
                 onClick={() => onPayment(student.id)}
                 className="gap-1 bg-status-paid hover:bg-status-paid/90 text-primary-foreground"
               >
@@ -106,7 +119,9 @@ export function StudentCard({
                 variant="outline"
                 onClick={() => onWhatsApp(student.id)}
                 disabled={
-                  student.status !== "overdue" && student.status !== "due-soon"
+                  !student.active ||
+                  (student.status !== "overdue" &&
+                    student.status !== "due-soon")
                 }
                 className="gap-1"
               >

@@ -11,6 +11,7 @@ export function transformStudent(data: any): Student {
     phone: data.phone,
     startDate: data.start_date,
     dueDay: data.due_day,
+    active: data.active ?? true, // Default true para retrocompatibilidade
     createdAt: data.created_at,
   };
 }
@@ -47,6 +48,7 @@ export function toSupabaseStudent(student: Omit<Student, "id" | "createdAt">) {
     phone: student.phone,
     start_date: student.startDate,
     due_day: student.dueDay,
+    active: student.active ?? true,
     created_at: new Date().toISOString(),
   };
 }

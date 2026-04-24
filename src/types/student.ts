@@ -5,6 +5,7 @@ export interface Student {
   phone: string;
   startDate: string; // ISO date
   dueDay: number; // day of month
+  active: boolean; // se o aluno está ativo ou inativo
   createdAt: string;
 }
 

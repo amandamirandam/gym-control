@@ -50,7 +50,8 @@ export async function getStudentsNeedingNotification() {
   try {
     const { data: students, error: studentsError } = await supabase
       .from("students")
-      .select("*");
+      .select("*")
+      .eq("active", true); // Apenas alunos ativos
 
     if (studentsError) throw studentsError;
 

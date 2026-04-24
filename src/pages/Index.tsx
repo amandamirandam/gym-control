@@ -83,7 +83,9 @@ export default function Index() {
   const [showForm, setShowForm] = useState(false);
   const [showAutoPanel, setShowAutoPanel] = useState(true);
   const [showOverdueDialog, setShowOverdueDialog] = useState(false);
-  const [filter, setFilter] = useState<StudentStatus | "all">("all");
+  const [filter, setFilter] = useState<StudentStatus | "all" | "inactive">(
+    "all",
+  );
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9; // 9 alunos por página (3x3 grid)
@@ -96,24 +98,43 @@ export default function Index() {
 
   const counts = useMemo(
     () => ({
-      all: students.length,
-      paid: students.filter((s) => s.status === "paid").length,
-      overdue: students.filter((s) => s.status === "overdue").length,
-      "due-soon": students.filter((s) => s.status === "due-soon").length,
-      pending: students.filter((s) => s.status === "pending").length,
+      all: students.filter((s) => s.active).length,
+      paid: students.filter((s) => s.active && s.status === "paid").length,
+      overdue: students.filter((s) => s.active && s.status === "overdue")
+        .length,
+      "due-soon": students.filter((s) => s.active && s.status === "due-soon")
+        .length,
+      pending: students.filter((s) => s.active && s.status === "pending")
+        .length,
+      inactive: students.filter((s) => !s.active).length,
     }),
     [students],
   );
 
   const filteredStudents = useMemo(() => {
     let list = students;
-    if (filter !== "all") list = list.filter((s) => s.status === filter);
+
+    // Filtro de inativos
+    if (filter === "inactive") {
+      list = list.filter((s) => !s.active);
+    } else {
+      // Por padrão, mostrar apenas alunos ativos
+      list = list.filter((s) => s.active);
+
+      // Aplicar filtro de status
+      if (filter !== "all") {
+        list = list.filter((s) => s.status === filter);
+      }
+    }
+
+    // Filtro de busca
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
         (s) => s.name.toLowerCase().includes(q) || s.phone.includes(q),
       );
     }
+
     // Sort: overdue first, then due-soon, pending, paid
     const order: Record<StudentStatus, number> = {
       overdue: 0,
@@ -142,7 +163,7 @@ export default function Index() {
   // Alunos atrasados para o dialog
   const overdueStudents = useMemo(() => {
     return students
-      .filter((s) => s.status === "overdue")
+      .filter((s) => s.active && s.status === "overdue")
       .sort((a, b) => {
         // Calcula dias de atraso para ordenar (mais atrasado primeiro)
         const aOverdue = a.daysOverdue || 0;
@@ -154,6 +175,16 @@ export default function Index() {
   const handleManualCharge = async (studentId: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
+
+    // Não enviar para alunos inativos
+    if (!student.active) {
+      toast({
+        title: "Aluno inativo",
+        description: "Não é possível enviar mensagens para alunos inativos",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const message = getWhatsAppMessage(student.name, "overdue");
@@ -221,6 +252,16 @@ export default function Index() {
   const handleWhatsApp = async (studentId: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
+
+    // Não enviar para alunos inativos
+    if (!student.active) {
+      toast({
+        title: "Aluno inativo",
+        description: "Não é possível enviar mensagens para alunos inativos",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const type =
       student.status === "overdue"
@@ -482,6 +523,14 @@ export default function Index() {
                                     ? "dia atrasado"
                                     : "dias atrasados"}
                                 </Badge>
+                                {!student.active && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs bg-muted"
+                                  >
+                                    INATIVO
+                                  </Badge>
+                                )}
                               </div>
                               <p className="text-sm text-muted-foreground">
                                 {student.phone} • Vencimento: dia{" "}
@@ -493,6 +542,7 @@ export default function Index() {
                               size="sm"
                               className="gap-1 ml-2 flex-shrink-0 border-destructive/50 hover:bg-destructive hover:text-destructive-foreground"
                               onClick={() => handleManualCharge(student.id)}
+                              disabled={!student.active}
                             >
                               <MessageSquare className="h-3.5 w-3.5" />
                               Cobrar

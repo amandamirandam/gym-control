@@ -14,6 +14,7 @@ interface StudentFormProps {
     phone: string;
     startDate: string;
     dueDay: number;
+    active: boolean;
   }) => Promise<void> | void;
   onCancel: () => void;
 }
@@ -72,6 +73,7 @@ export function StudentForm({ onSubmit, onCancel }: StudentFormProps) {
         phone: cleanPhone,
         startDate,
         dueDay,
+        active: true, // Novos alunos sempre começam ativos
       });
     } catch (err) {
       // Capturar erro localmente e exibir no formulário
