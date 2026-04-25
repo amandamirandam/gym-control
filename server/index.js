@@ -57,18 +57,24 @@ app.use("/api/cron", cronRoutes);
 // Health check
 app.get("/health", async (req, res) => {
   const startTime = Date.now();
+  const requestTime = new Date().toISOString();
+  const isDetailed = req.query.detailed === "true";
+  
+  if (isDetailed) {
+    console.log(`[${requestTime}] Health check detalhado requisitado`);
+  }
 
   // Informações básicas do servidor
   const healthInfo = {
     status: "ok",
     message: "Gym Control Server is running",
-    timestamp: new Date().toISOString(),
+    timestamp: requestTime,
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || "development",
   };
 
   // Se requisição incluir ?detailed=true, testa conexão com Supabase
-  if (req.query.detailed === "true") {
+  if (isDetailed) {
     try {
       const { default: supabase } = await import("./config/supabase.js");
       const dbStart = Date.now();
@@ -79,15 +85,23 @@ app.get("/health", async (req, res) => {
         status: error ? "error" : "connected",
         responseTime: `${dbTime}ms`,
       };
+      
+      console.log(`Database: ${healthInfo.database.status} (${dbTime}ms)`);
     } catch (err) {
       healthInfo.database = {
         status: "error",
         error: err.message,
       };
+      console.log(`Database: error - ${err.message}`);
     }
   }
 
   healthInfo.responseTime = `${Date.now() - startTime}ms`;
+  
+  if (isDetailed) {
+    console.log(`Health check concluído (${healthInfo.responseTime})\n`);
+  }
+  
   res.json(healthInfo);
 });
 
@@ -100,7 +114,7 @@ app.listen(PORT, () => {
     ? process.env.RENDER_EXTERNAL_URL || `https://gym-control-2.onrender.com`
     : `http://localhost:${PORT}`;
 
-  console.log(`✅ Servidor Express rodando na porta ${PORT}`);
+  console.log(`Servidor Express rodando na porta ${PORT}`);
   console.log(`Ambiente: ${isProduction ? "PRODUÇÃO" : "DESENVOLVIMENTO"}`);
   console.log(`Health check: ${baseUrl}/health`);
   console.log(`Endpoints disponíveis: ${baseUrl}/api/\n`);

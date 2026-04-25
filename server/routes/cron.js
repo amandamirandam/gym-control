@@ -5,6 +5,14 @@ const router = express.Router();
 
 // Handler compartilhado para GET e POST
 const sendNotificationsHandler = async (req, res) => {
+  const requestTime = new Date().toISOString();
+  const requestIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+  console.log(`\n⏰ [${requestTime}] Send-notifications chamado`);
+  console.log(`   Método: ${req.method}`);
+  console.log(`   IP: ${requestIp}`);
+
   try {
     // Validar token de segurança (aceita header ou query param)
     const authHeader = req.headers.authorization;
@@ -15,27 +23,32 @@ const sendNotificationsHandler = async (req, res) => {
     const providedToken = authHeader?.replace("Bearer ", "") || tokenQuery;
 
     if (!providedToken || providedToken !== cronSecret) {
+      console.log(`   ❌ Autenticação falhou - token inválido\n`);
       return res.status(401).json({
         success: false,
         message: "Não autorizado - token inválido",
       });
     }
 
-    console.log(
-      `${new Date().toISOString()} - Cron job disparado via ${req.method}`,
-    );
+    console.log(`   ✅ Token validado`);
+    console.log(`   🚀 Iniciando envio de notificações...\n`);
 
     // Executar envio de notificações
     const result = await sendNotifications();
 
+    console.log(`\n   ✓ Notificações processadas`);
+    console.log(
+      `   📊 Stats: ${result.success || 0}/${result.total || 0} enviadas\n`,
+    );
+
     res.json({
       success: true,
       message: "Notificações processadas com sucesso",
-      timestamp: new Date().toISOString(),
+      timestamp: requestTime,
       stats: result || { total: 0, success: 0, failures: 0 },
     });
   } catch (error) {
-    console.error("Erro no cron job via HTTP:", error);
+    console.error(`   ❌ ERRO no cron job: ${error.message}\n`);
     res.status(500).json({
       success: false,
       message: "Erro ao processar notificações",
@@ -68,29 +81,49 @@ router.post("/send-notifications", sendNotificationsHandler);
  * Não requer autenticação (apenas para wake-up)
  */
 router.get("/wake-up", async (req, res) => {
+  const requestTime = new Date().toISOString();
+  const requestIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+  console.log(`[${requestTime}] Wake-up chamado`);
+  console.log(`   IP: ${requestIp}`);
+  console.log(`   User-Agent: ${req.headers["user-agent"]}`);
+
   try {
     const serverStartTime = Date.now();
 
     // Teste de conexão com Supabase
     let dbStatus = "unknown";
     let dbTime = 0;
+
+    console.log(`Testando conexão com Supabase...`);
+
     try {
       const { default: supabase } = await import("../config/supabase.js");
       const dbStart = Date.now();
       const { error } = await supabase.from("students").select("id").limit(1);
       dbTime = Date.now() - dbStart;
       dbStatus = error ? "error" : "connected";
+
+      if (error) {
+        console.log(`Supabase: ERRO - ${error.message}`);
+      } else {
+        console.log(`Supabase: CONECTADO (${dbTime}ms)`);
+      }
     } catch (err) {
       dbStatus = "error";
-      console.warn("Wake-up: Erro ao conectar com Supabase:", err.message);
+      console.log(`Supabase: EXCEÇÃO - ${err.message}`);
     }
 
     const totalTime = Date.now() - serverStartTime;
 
+    console.log(`Tempo total de aquecimento: ${totalTime}ms`);
+    console.log(`Wake-up concluído com sucesso\n`);
+
     res.json({
       success: true,
       message: "Servidor aquecido e pronto",
-      timestamp: new Date().toISOString(),
+      timestamp: requestTime,
       warmup: {
         totalTime: `${totalTime}ms`,
         database: {
@@ -102,7 +135,7 @@ router.get("/wake-up", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro no wake-up:", error.message);
+    console.error(`ERRO no wake-up: ${error.message}\n`);
     res.status(500).json({
       success: false,
       message: "Erro ao aquecer servidor",
