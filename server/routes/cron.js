@@ -57,6 +57,60 @@ router.get("/send-notifications", sendNotificationsHandler);
 router.post("/send-notifications", sendNotificationsHandler);
 
 /**
+ * GET /api/cron/wake-up
+ * Endpoint de "aquecimento" para acordar o servidor antes da execução do cron principal
+ * Render gratuito hiberna após 15min de inatividade - este endpoint prepara o servidor
+ * 
+ * Estratégia recomendada no cron-job.org:
+ * 1. 08:58 - Chamar /api/cron/wake-up (acorda o servidor)
+ * 2. 09:00 - Chamar /api/cron/send-notifications (executa o job)
+ * 
+ * Não requer autenticação (apenas para wake-up)
+ */
+router.get("/wake-up", async (req, res) => {
+  try {
+    const serverStartTime = Date.now();
+    
+    // Teste de conexão com Supabase
+    let dbStatus = "unknown";
+    let dbTime = 0;
+    try {
+      const { default: supabase } = await import("../config/supabase.js");
+      const dbStart = Date.now();
+      const { error } = await supabase.from("students").select("id").limit(1);
+      dbTime = Date.now() - dbStart;
+      dbStatus = error ? "error" : "connected";
+    } catch (err) {
+      dbStatus = "error";
+      console.warn("Wake-up: Erro ao conectar com Supabase:", err.message);
+    }
+
+    const totalTime = Date.now() - serverStartTime;
+
+    res.json({
+      success: true,
+      message: "Servidor aquecido e pronto",
+      timestamp: new Date().toISOString(),
+      warmup: {
+        totalTime: `${totalTime}ms`,
+        database: {
+          status: dbStatus,
+          responseTime: `${dbTime}ms`,
+        },
+        recommendation: "Aguarde 1-2 minutos antes de chamar o endpoint principal",
+      },
+    });
+  } catch (error) {
+    console.error("Erro no wake-up:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao aquecer servidor",
+      error: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/cron/status
  * Verifica se o serviço de cron está operacional
  */

@@ -55,8 +55,40 @@ app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/cron", cronRoutes);
 
 // Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Gym Control Server is running" });
+app.get("/health", async (req, res) => {
+  const startTime = Date.now();
+  
+  // Informações básicas do servidor
+  const healthInfo = {
+    status: "ok",
+    message: "Gym Control Server is running",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+  };
+
+  // Se requisição incluir ?detailed=true, testa conexão com Supabase
+  if (req.query.detailed === "true") {
+    try {
+      const { default: supabase } = await import("./config/supabase.js");
+      const dbStart = Date.now();
+      const { error } = await supabase.from("students").select("id").limit(1);
+      const dbTime = Date.now() - dbStart;
+      
+      healthInfo.database = {
+        status: error ? "error" : "connected",
+        responseTime: `${dbTime}ms`,
+      };
+    } catch (err) {
+      healthInfo.database = {
+        status: "error",
+        error: err.message,
+      };
+    }
+  }
+
+  healthInfo.responseTime = `${Date.now() - startTime}ms`;
+  res.json(healthInfo);
 });
 
 console.log("Iniciando Gym Control Notification Server...\n");
