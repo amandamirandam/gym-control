@@ -57,7 +57,7 @@ app.use("/api/cron", cronRoutes);
 // Health check
 app.get("/health", async (req, res) => {
   const startTime = Date.now();
-  
+
   // Informações básicas do servidor
   const healthInfo = {
     status: "ok",
@@ -74,7 +74,7 @@ app.get("/health", async (req, res) => {
       const dbStart = Date.now();
       const { error } = await supabase.from("students").select("id").limit(1);
       const dbTime = Date.now() - dbStart;
-      
+
       healthInfo.database = {
         status: error ? "error" : "connected",
         responseTime: `${dbTime}ms`,

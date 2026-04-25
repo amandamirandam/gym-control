@@ -60,17 +60,17 @@ router.post("/send-notifications", sendNotificationsHandler);
  * GET /api/cron/wake-up
  * Endpoint de "aquecimento" para acordar o servidor antes da execução do cron principal
  * Render gratuito hiberna após 15min de inatividade - este endpoint prepara o servidor
- * 
+ *
  * Estratégia recomendada no cron-job.org:
  * 1. 08:58 - Chamar /api/cron/wake-up (acorda o servidor)
  * 2. 09:00 - Chamar /api/cron/send-notifications (executa o job)
- * 
+ *
  * Não requer autenticação (apenas para wake-up)
  */
 router.get("/wake-up", async (req, res) => {
   try {
     const serverStartTime = Date.now();
-    
+
     // Teste de conexão com Supabase
     let dbStatus = "unknown";
     let dbTime = 0;
@@ -97,7 +97,8 @@ router.get("/wake-up", async (req, res) => {
           status: dbStatus,
           responseTime: `${dbTime}ms`,
         },
-        recommendation: "Aguarde 1-2 minutos antes de chamar o endpoint principal",
+        recommendation:
+          "Aguarde 1-2 minutos antes de chamar o endpoint principal",
       },
     });
   } catch (error) {
